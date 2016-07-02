@@ -1,15 +1,11 @@
-package com.offbynull.peernetic.io.actors.udpsimulator;
+package com.offbynull.peernetic.io.actors.networksimulator;
 
-import com.offbynull.peernetic.io.actors.networksimulator.SimpleLine;
-import com.offbynull.peernetic.io.actors.networksimulator.DepartMessage;
-import com.offbynull.peernetic.io.actors.networksimulator.TransitMessage;
 import com.offbynull.peernetic.core.common.SimpleSerializer;
 import com.offbynull.peernetic.core.shuttle.Address;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collection;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -32,11 +32,10 @@ import java.time.Instant;
  * In the following example, there are two {@link Actor}s: {@code sender} and {@code echoer}. {@code sender} sends 10 message and waits for
  * those messages to be echoed back to it, while {@code echoer} echoes back whatever is sent to it. Both of these actors are assigned
  * their own {@link NetworkSimulatorCoroutine} (both called {@code proxy} -- note that each actor is running in its own {@link ActorRunner} so
- * there is no naming conflict here), and pass messages through it to the other to simulate communicating over UDP.
+ * there is no naming conflict here), and pass messages through it to the other to simulate communicating over TCP.
  * <p>
- * Note that UDP is unreliable. Each message is sent as a single packet, and packets may come out of order or not at all. This example
- * simulates mild unreliability in terms of packet loss and packet duplication, and heavy unreliability in terms of out-of-order packet
- * arrival (jitter is set to a maximum of 1 second). The line can be modified to change unreliability parameters.
+ * This example simulates mild unreliability in terms of message loss and message duplication, and heavy unreliability in terms of
+ * out-of-order message arrival (jitter is set to a maximum of 1 second). The line can be modified to change unreliability parameters.
  * <pre>
  * Coroutine sender = (cnt) -&gt; {
  *     Context ctx = (Context) cnt.getContext();
@@ -70,7 +69,7 @@ import java.time.Instant;
  *
  * 
  * 
- * // Create a timer gateway. Used by UdpSimualtorCoroutine to time message arrivals
+ * // Create a timer gateway. Used by NetworkSimualtorCoroutine to time message arrivals
  * TimerGateway timerGateway = new TimerGateway("timer");
  * 
  * // Create runners for echoer and sender
@@ -90,10 +89,10 @@ import java.time.Instant;
  * timerGateway.addOutgoingShuttle(senderRunner.getIncomingShuttle());
  * timerGateway.addOutgoingShuttle(echoerRunner.getIncomingShuttle());
  *
- * // Create echoer actor + the udp simulator that proxies it
+ * // Create echoer actor + the net simulator that proxies it
  * echoerRunner.addActor("echoer", echoer);
- * echoerRunner.addActor("proxy", new UdpSimulatorCoroutine(), // Create UDP simulator proxy and prime
- *         new StartUdpSimulator(
+ * echoerRunner.addActor("proxy", new NetworkSimulatorCoroutine(), // Create network simulator proxy and prime
+ *         new StartNetworkSimulator(
  *                 Address.of("timer"),                                                                      // Timer to use to delay msgs
  *                 Address.fromString("echoer:echoer"),                                                      // Actor being proxied
  *                 () -&gt;  new SimpleLine(                                                                    // Unreliability params
@@ -106,10 +105,10 @@ import java.time.Instant;
  *                                1500,
  *                                new SimpleSerializer())));
  * 
- * // Create sender actor + the udp simulator that proxies it
+ * // Create sender actor + the network simulator that proxies it
  * senderRunner.addActor("sender", sender, Address.fromString("sender:proxy:echoer:proxy"));
- * senderRunner.addActor("proxy", new UdpSimulatorCoroutine(), // Create UDP simulator proxy and prime
- *         new StartUdpSimulator(
+ * senderRunner.addActor("proxy", new NetworkSimulatorCoroutine(), // Create network simulator proxy and prime
+ *         new StartNetworkSimulator(
  *                 Address.of("timer"),                                                                      // Timer to use to delay msgs
  *                 Address.fromString("sender:sender"),                                                      // Actor being proxied
  *                 () -&gt; new SimpleLine(                                                                    // Unreliability params

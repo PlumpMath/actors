@@ -1,8 +1,5 @@
-package com.offbynull.peernetic.io.actors.udpsimulator;
+package com.offbynull.peernetic.io.actors.networksimulator;
 
-import com.offbynull.peernetic.io.actors.networksimulator.SimpleLine;
-import com.offbynull.peernetic.io.actors.networksimulator.NetworkSimulatorCoroutine;
-import com.offbynull.peernetic.io.actors.networksimulator.StartNetworkSimulator;
 import com.offbynull.coroutines.user.Coroutine;
 import com.offbynull.peernetic.core.actor.Context;
 import com.offbynull.peernetic.core.common.SimpleSerializer;
@@ -13,13 +10,13 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import static org.junit.Assert.assertEquals;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
-public class StartUdpSimulatorTest {
+public class StartNetworkSimulatorTest {
 
     @Test
-    public void mustProperlySimulateUdp() throws Exception {
+    public void mustProperlySimulateNetwork() throws Exception {
 
         List<Object> queue = new LinkedList<>();
 
