@@ -27,11 +27,9 @@ public final class WriteTcpNetworkResponse extends IdentifiableNetworkResponse {
 
     /**
      * Constructs a {@link WriteTcpNetworkResponse} object.
-     * @param id id of socket
      * @param amountWritten amount of data written out (in bytes)
      */
-    public WriteTcpNetworkResponse(int id, int amountWritten) {
-        super(id);
+    public WriteTcpNetworkResponse(int amountWritten) {
         Validate.inclusiveBetween(0, Integer.MAX_VALUE, amountWritten);
         this.amountWritten = amountWritten;
     }

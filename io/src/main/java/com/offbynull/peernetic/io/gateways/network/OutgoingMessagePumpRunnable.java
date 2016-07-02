@@ -16,19 +16,13 @@
  */
 package com.offbynull.peernetic.io.gateways.network;
 
-import com.offbynull.peernetic.io.gateways.udp.*;
-import com.offbynull.peernetic.core.common.Serializer;
 import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.core.shuttle.Message;
 import com.offbynull.peernetic.core.shuttle.Shuttle;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,18 +30,18 @@ import org.slf4j.LoggerFactory;
 // This thread is basically an intermediary between NIO and the receiving shuttle. Originally intended for if decoupling deserialization
 // from NIO selection thread such that deserialization wouldn't block NIO access if it was slow. Not required anymore since we're no longer
 // deserializing at this stage. Should be removed at some point in the future.
-final class IncomingPumpRunnable implements Runnable {
+final class OutgoingMessagePumpRunnable implements Runnable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(IncomingPumpRunnable.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OutgoingMessagePumpRunnable.class);
 
     private final Address selfPrefix;
     private final Address proxyPrefix;
     
-    // from udp NIO thread to this pump
-    private final LinkedBlockingQueue<Object> inQueue;
+    // from NIO thread to this pump
+    private final LinkedBlockingQueue<Message> inQueue;
     private final Shuttle outShuttle;
     
-    public IncomingPumpRunnable(Address selfPrefix, Address proxyPrefix, Shuttle proxyShuttle, LinkedBlockingQueue<Object> inQueue) {
+    public OutgoingMessagePumpRunnable(Address selfPrefix, Address proxyPrefix, Shuttle proxyShuttle, LinkedBlockingQueue<Message> inQueue) {
         Validate.notNull(selfPrefix);
         Validate.notNull(proxyPrefix);
         Validate.notNull(proxyShuttle);

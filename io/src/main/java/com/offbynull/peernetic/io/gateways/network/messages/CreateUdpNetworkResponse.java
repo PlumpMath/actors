@@ -22,16 +22,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  */
 public final class CreateUdpNetworkResponse extends IdentifiableNetworkResponse {
 
-    /**
-     * Constructs a {@link CreateUdpNetworkResponse}.
-     * @param id id of socket
-     */
-    public CreateUdpNetworkResponse(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "CreateUdpNetworkResponse{super=" + super.toString() + '}';
-    }
 }

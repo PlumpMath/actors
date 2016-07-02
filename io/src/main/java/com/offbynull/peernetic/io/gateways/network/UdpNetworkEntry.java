@@ -16,6 +16,7 @@
  */
 package com.offbynull.peernetic.io.gateways.network;
 
+import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.io.gateways.network.UdpNetworkEntry.AddressedByteBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -25,8 +26,8 @@ import java.util.LinkedList;
 final class UdpNetworkEntry extends NetworkEntry<AddressedByteBuffer> {
     private LinkedList<AddressedByteBuffer> outgoingBuffers;
 
-    UdpNetworkEntry(int id, Channel channel) {
-        super(id, channel);
+    UdpNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
+        super(selfSuffix, proxySuffix, channel);
         outgoingBuffers = new LinkedList<>();
     }
 

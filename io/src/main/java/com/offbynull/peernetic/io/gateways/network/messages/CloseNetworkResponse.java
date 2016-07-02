@@ -23,18 +23,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public final class CloseNetworkResponse extends IdentifiableNetworkResponse {
-
-    /**
-     * Constructs a {@link CloseNetworkResponse}.
-     * @param id id of socket
-     */
-    public CloseNetworkResponse(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "CloseNetworkResponse{super=" + super.toString() + '}';
-    }
-
 }

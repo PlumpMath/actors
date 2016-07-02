@@ -22,17 +22,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  */
 public final class WriteEmptyTcpNetworkNotification extends IdentifiableNetworkNotification {
 
-    /**
-     * Constructs a {@link WriteEmptyTcpNetworkNotification} object.
-     * @param id id of socket
-     */
-    public WriteEmptyTcpNetworkNotification(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "WriteEmptyTcpNetworkNotification{super=" + super.toString() + '}';
-    }
-
 }

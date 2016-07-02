@@ -32,44 +32,27 @@ public final class NetworkGateway implements InputGateway {
     private final SimpleShuttle srcShuttle;
     private NetworkRunnable runnable;
     private Thread thread;
-
-    /**
-     * Creates a {@link NetworkGateway} object.
-     * @return new {@link NetworkGateway}
-     */
-    public static NetworkGateway create() {
-        NetworkGateway ng = new NetworkGateway();
-        
-        ng.runnable = new NetworkRunnable();
-        ng.thread = new Thread(ng.runnable);
-        ng.thread.setDaemon(true);
-        ng.thread.setName("Network IO");
-        
-        ng.thread.start();
-        
-        return ng;
-    }
     
     public NetworkGateway(
             String prefix,
-            Shuttle outgoingShuttle,
-            Address outgoingAddress) {
+            Shuttle proxyShuttle,
+            Address proxyAddress) {
+        Validate.notNull(prefix);
+        Validate.notNull(proxyShuttle);
+        Validate.notNull(proxyAddress);
+
         // Validate outgoingAddress is for outgoignShuttle
-        Address outgoingPrefix = Address.of(outgoingShuttle.getPrefix());
-        Validate.isTrue(outgoingPrefix.isPrefixOf(outgoingAddress));
+        Address outgoingPrefix = Address.of(proxyShuttle.getPrefix());
+        Validate.isTrue(outgoingPrefix.isPrefixOf(proxyAddress));
         
         Bus bus = new Bus();
         srcShuttle = new SimpleShuttle(prefix, bus);
         Address selfPrefix = Address.of(prefix);
         
-        NetworkGateway ng = new NetworkGateway(selfPrefix, outgoingAddress, outgoingShuttle);
-        
-        ng.runnable = new NetworkRunnable();
-        ng.thread = new Thread(ng.runnable);
-        ng.thread.setDaemon(true);
-        ng.thread.setName("Network IO");
-        
-        ng.thread.start();
+        runnable = new NetworkRunnable(selfPrefix, proxyAddress, proxyShuttle, bus, 65535);
+        thread = new Thread(runnable, "Network IO - " + selfPrefix);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @Override

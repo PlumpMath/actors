@@ -27,11 +27,9 @@ public final class WriteUdpNetworkResponse extends IdentifiableNetworkResponse {
 
     /**
      * Constructs a {@link WriteUdpNetworkResponse} object.
-     * @param id id of socket
      * @param amountWritten amount of data written out in packet (in bytes)
      */
-    public WriteUdpNetworkResponse(int id, int amountWritten) {
-        super(id);
+    public WriteUdpNetworkResponse(int amountWritten) {
         Validate.inclusiveBetween(0, Integer.MAX_VALUE, amountWritten);
         this.amountWritten = amountWritten;
     }

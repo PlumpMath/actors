@@ -21,26 +21,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public abstract class IdentifiableNetworkResponse {
-    
-    private int id;
-
-    IdentifiableNetworkResponse(int id) {
-        this.id = id;
-    }
-
-    /**
-     * Get socket id.
-     * @return id of socket
-     */
-    public final int getId() {
-        return id;
-    }
-
-    // CHECKSTYLE:OFF:DesignForExtension
-    @Override
-    public String toString() {
-        return "IdentifiableNetworkResponse{" + "id=" + id + '}';
-    }
-    // CHECKSTYLE:ON:DesignForExtension
-
 }

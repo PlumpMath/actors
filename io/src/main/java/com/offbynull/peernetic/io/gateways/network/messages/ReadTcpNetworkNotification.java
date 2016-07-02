@@ -27,12 +27,10 @@ public final class ReadTcpNetworkNotification extends IdentifiableNetworkNotific
 
     /**
      * Constructs a {@link ReadTcpNetworkNotification} object.
-     * @param id id of socket
      * @param data received data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public ReadTcpNetworkNotification(int id, byte[] data) {
-        super(id);
+    public ReadTcpNetworkNotification(byte[] data) {
         this.data = Arrays.copyOf(data, data.length);
     }
 

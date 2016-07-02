@@ -32,16 +32,14 @@ public final class CreateTcpNetworkRequest extends IdentifiableNetworkRequest {
 
     /**
      * Constructs a {@link CreateTcpNetworkRequest} object.
-     * @param id id of socket
      * @param sourceAddress source address of the socket to be created
      * @param destinationAddress destination address of the socket to be created
      * @param destinationPort destination port of the socket to be created
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code 1 > destinationPort > 65535}
      */
-    public CreateTcpNetworkRequest(int id, InetAddress sourceAddress, InetAddress destinationAddress,
+    public CreateTcpNetworkRequest(InetAddress sourceAddress, InetAddress destinationAddress,
             int destinationPort) {
-        super(id);
         Validate.notNull(sourceAddress);
         Validate.notNull(destinationAddress);
         Validate.inclusiveBetween(1, 65535, destinationPort);

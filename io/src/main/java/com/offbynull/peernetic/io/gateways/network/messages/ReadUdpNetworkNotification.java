@@ -31,14 +31,12 @@ public final class ReadUdpNetworkNotification extends IdentifiableNetworkNotific
 
     /**
      * Constructs a {@link ReadUdpNetworkNotification} object.
-     * @param id id of socket
      * @param localAddress address sent to
      * @param remoteAddress address sent from
      * @param data received data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public ReadUdpNetworkNotification(int id, InetSocketAddress localAddress, InetSocketAddress remoteAddress, byte[] data) {
-        super(id);
+    public ReadUdpNetworkNotification(InetSocketAddress localAddress, InetSocketAddress remoteAddress, byte[] data) {
         Validate.notNull(localAddress);
         Validate.notNull(remoteAddress);
         Validate.notNull(data);

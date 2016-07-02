@@ -21,18 +21,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public final class WriteEmptyUdpNetworkNotification extends IdentifiableNetworkNotification {
-
-    /**
-     * Constructs a {@link WriteEmptyUdpNetworkNotification} object.
-     * @param id id of socket
-     */
-    public WriteEmptyUdpNetworkNotification(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "WriteEmptyUdpNetworkNotification{super=" + super.toString() + '}';
-    }
-
 }

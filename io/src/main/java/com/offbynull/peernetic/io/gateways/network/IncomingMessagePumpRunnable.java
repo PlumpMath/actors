@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
 // This thread is basically an intermediary between the Shuttle and NIO. If wakeup ever slows down or blocks it won't effect the shuttle
 // pushing messages to this intermediary. Additional messages can still be added to the shuttle, it'll just be queued until this thread gets
 // a chance to read.
-final class OutgoingPumpRunnable implements Runnable {
+final class IncomingMessagePumpRunnable implements Runnable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(OutgoingPumpRunnable.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IncomingMessagePumpRunnable.class);
     
     private final Address selfPrefix;
     private final Address proxyPrefix;
@@ -50,11 +50,11 @@ final class OutgoingPumpRunnable implements Runnable {
     // from this gateway's Shuttle to this pump
     private final Bus bus;
     
-    // from this pump to the udp NIO thread
-    private final LinkedBlockingQueue<Object> outQueue;
+    // from this pump to the NIO thread
+    private final LinkedBlockingQueue<Message> outQueue;
     private final Selector outSelector; // selector is what blocks in the NIO thread
 
-    public OutgoingPumpRunnable(Address selfPrefix, Address proxyPrefix, Bus bus, LinkedBlockingQueue<Object> outQueue,
+    public IncomingMessagePumpRunnable(Address selfPrefix, Address proxyPrefix, Bus bus, LinkedBlockingQueue<Message> outQueue,
             Selector outSelector) {
         Validate.notNull(selfPrefix);
         Validate.notNull(proxyPrefix);
@@ -76,11 +76,10 @@ final class OutgoingPumpRunnable implements Runnable {
                 // Poll for new messages from this gateway's shuttle
                 List<Object> incomingObjects = bus.pull();
                 
-                List<Object> convertedObjects = incomingObjects.stream()
+                List<Message> convertedObjects = incomingObjects.stream()
                         .map(x -> (Message) x)
                         .filter(x -> selfPrefix.isPrefixOf(x.getSourceAddress())) // only msgs intended for this gateway
                         .filter(x -> proxyPrefix.isPrefixOf(x.getDestinationAddress())) // only msgs from address we're allowed to talk to
-                        .map(x -> x.getMessage()) // get actual message from message envelope
                         .collect(Collectors.toList());
 
                 // insert and notify if not empty

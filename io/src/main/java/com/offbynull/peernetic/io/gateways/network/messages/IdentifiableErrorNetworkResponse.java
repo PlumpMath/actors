@@ -22,18 +22,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public final class IdentifiableErrorNetworkResponse extends IdentifiableNetworkResponse {
-
-    /**
-     * Constructs a {@link IdentifiableErrorNetworkResponse} object.
-     * @param id id of socket
-     */
-    public IdentifiableErrorNetworkResponse(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "IdentifiableErrorNetworkResponse{super=" + super.toString() + '}';
-    }
-
 }

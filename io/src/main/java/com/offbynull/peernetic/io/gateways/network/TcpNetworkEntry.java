@@ -16,6 +16,7 @@
  */
 package com.offbynull.peernetic.io.gateways.network;
 
+import com.offbynull.peernetic.core.shuttle.Address;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.LinkedList;
@@ -25,8 +26,8 @@ final class TcpNetworkEntry extends NetworkEntry<ByteBuffer> {
     private boolean readFinished;
     private LinkedList<ByteBuffer> outgoingBuffers;
 
-    TcpNetworkEntry(int id, Channel channel) {
-        super(id, channel);
+    TcpNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
+        super(selfSuffix, proxySuffix, channel);
         outgoingBuffers = new LinkedList<>();
     }
 

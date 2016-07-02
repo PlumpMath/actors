@@ -1,8 +1,8 @@
 package com.offbynull.peernetic.io.actors.udpsimulator;
 
-import com.offbynull.peernetic.io.actors.udpsimulator.SimpleLine;
-import com.offbynull.peernetic.io.actors.udpsimulator.DepartMessage;
-import com.offbynull.peernetic.io.actors.udpsimulator.TransitMessage;
+import com.offbynull.peernetic.io.actors.networksimulator.SimpleLine;
+import com.offbynull.peernetic.io.actors.networksimulator.DepartMessage;
+import com.offbynull.peernetic.io.actors.networksimulator.TransitMessage;
 import com.offbynull.peernetic.core.common.SimpleSerializer;
 import com.offbynull.peernetic.core.shuttle.Address;
 import java.nio.ByteBuffer;

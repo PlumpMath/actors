@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.actors.udpsimulator;
+package com.offbynull.peernetic.io.actors.networksimulator;
 
 import com.offbynull.peernetic.core.shuttle.Address;
 import java.util.function.Supplier;
@@ -24,7 +24,7 @@ import org.apache.commons.lang3.Validate;
  * Priming message for {@link UdpSimulatorCoroutine}.
  * @author Kasra Faghihi
  */
-public final class StartUdpSimulator {
+public final class StartNetworkSimulator {
     private final Address timerPrefix;
     private final Address actorPrefix;
     private final Supplier<Line> lineFactory;
@@ -37,7 +37,7 @@ public final class StartUdpSimulator {
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code timerPrefix} or {@code actorPrefix} is empty
      */
-    public StartUdpSimulator(Address timerPrefix, Address actorPrefix, Supplier<Line> lineFactory) {
+    public StartNetworkSimulator(Address timerPrefix, Address actorPrefix, Supplier<Line> lineFactory) {
         Validate.notNull(timerPrefix);
         Validate.notNull(actorPrefix);
         Validate.notNull(lineFactory);

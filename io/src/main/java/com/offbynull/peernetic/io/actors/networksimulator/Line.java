@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.actors.udpsimulator;
+package com.offbynull.peernetic.io.actors.networksimulator;
 
 import java.time.Instant;
 import java.util.Collection;

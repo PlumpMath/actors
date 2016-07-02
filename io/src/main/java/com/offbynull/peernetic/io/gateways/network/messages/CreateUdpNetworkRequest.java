@@ -28,12 +28,10 @@ public final class CreateUdpNetworkRequest extends IdentifiableNetworkRequest {
 
     /**
      * Constructs a {@link CreateUdpNetworkRequest} object.
-     * @param id id of socket
      * @param sourceAddress source address of the socket to be created
      * @throws NullPointerException if any argument is {@code null}
      */
-    public CreateUdpNetworkRequest(int id, InetAddress sourceAddress) {
-        super(id);
+    public CreateUdpNetworkRequest(InetAddress sourceAddress) {
         Validate.notNull(sourceAddress);
         this.sourceAddress = sourceAddress;
     }

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.actors.udpsimulator;
+package com.offbynull.peernetic.io.actors.networksimulator;
 
 import com.offbynull.coroutines.user.Continuation;
 import com.offbynull.coroutines.user.Coroutine;
@@ -24,15 +24,14 @@ import com.offbynull.peernetic.core.actor.helpers.ProxyHelper;
 import com.offbynull.peernetic.core.actor.helpers.ProxyHelper.ForwardInformation;
 import com.offbynull.peernetic.core.actor.Context;
 import com.offbynull.peernetic.core.shuttle.Address;
-import com.offbynull.peernetic.io.gateways.udp.UdpGateway;
 import java.time.Instant;
 
 /**
- * {@link Coroutine} actor that attempts to simulate a {@link UdpGateway}.
+ * {@link Coroutine} actor that attempts to simulate network conditions.
  * <p>
  * In the following example, there are two {@link Actor}s: {@code sender} and {@code echoer}. {@code sender} sends 10 message and waits for
  * those messages to be echoed back to it, while {@code echoer} echoes back whatever is sent to it. Both of these actors are assigned
- * their own {@link UdpSimulatorCoroutine} (both called {@code proxy} -- note that each actor is running in its own {@link ActorRunner} so
+ * their own {@link NetworkSimulatorCoroutine} (both called {@code proxy} -- note that each actor is running in its own {@link ActorRunner} so
  * there is no naming conflict here), and pass messages through it to the other to simulate communicating over UDP.
  * <p>
  * Note that UDP is unreliable. Each message is sent as a single packet, and packets may come out of order or not at all. This example
@@ -128,13 +127,13 @@ import java.time.Instant;
  * </pre>
  * @author Kasra Faghihi
  */
-public final class UdpSimulatorCoroutine implements Coroutine {
+public final class NetworkSimulatorCoroutine implements Coroutine {
 
     @Override
     public void run(Continuation cont) throws Exception {
         Context ctx = (Context) cont.getContext();
 
-        StartUdpSimulator startMsg = ctx.getIncomingMessage();
+        StartNetworkSimulator startMsg = ctx.getIncomingMessage();
 
         Line line = startMsg.getLineFactory().get();
         Address timerPrefix = startMsg.getTimerPrefix();

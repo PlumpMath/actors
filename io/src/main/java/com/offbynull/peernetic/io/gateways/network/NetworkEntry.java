@@ -17,27 +17,34 @@
 package com.offbynull.peernetic.io.gateways.network;
 
 
+import com.offbynull.peernetic.core.shuttle.Address;
 import java.nio.channels.Channel;
 import java.util.LinkedList;
 import org.apache.commons.lang3.Validate;
 
 abstract class NetworkEntry<B> {
-    private final int id;
+    private final Address selfSuffix;
+    private final Address proxySuffix;
     private final Channel channel;
     private int selectionKey;
     private boolean notifiedOfWritable;
     
-    NetworkEntry(int id, Channel channel) {
+    NetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
         Validate.notNull(channel);
 
-        this.id = id;
+        this.selfSuffix = selfSuffix;
+        this.proxySuffix = proxySuffix;
         this.channel = channel;
         this.selectionKey = 0;
         this.notifiedOfWritable = false;
     }
 
-    int getId() {
-        return id;
+    Address getSelfSuffix() {
+        return selfSuffix;
+    }
+
+    Address getProxySuffix() {
+        return proxySuffix;
     }
 
     Channel getChannel() {

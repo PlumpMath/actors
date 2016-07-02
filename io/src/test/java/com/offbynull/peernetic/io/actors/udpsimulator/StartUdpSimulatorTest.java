@@ -1,8 +1,8 @@
 package com.offbynull.peernetic.io.actors.udpsimulator;
 
-import com.offbynull.peernetic.io.actors.udpsimulator.SimpleLine;
-import com.offbynull.peernetic.io.actors.udpsimulator.UdpSimulatorCoroutine;
-import com.offbynull.peernetic.io.actors.udpsimulator.StartUdpSimulator;
+import com.offbynull.peernetic.io.actors.networksimulator.SimpleLine;
+import com.offbynull.peernetic.io.actors.networksimulator.NetworkSimulatorCoroutine;
+import com.offbynull.peernetic.io.actors.networksimulator.StartNetworkSimulator;
 import com.offbynull.coroutines.user.Coroutine;
 import com.offbynull.peernetic.core.actor.Context;
 import com.offbynull.peernetic.core.common.SimpleSerializer;
@@ -51,8 +51,8 @@ public class StartUdpSimulatorTest {
         Simulator simulator = new Simulator();
         simulator.addTimer("timer", Instant.ofEpochMilli(0L));
         simulator.addActor("echoer", echoer, Duration.ZERO, Instant.ofEpochMilli(0L));
-        simulator.addActor("echoerproxy", new UdpSimulatorCoroutine(), Duration.ZERO, Instant.ofEpochMilli(0L),
-                new StartUdpSimulator(
+        simulator.addActor("echoerproxy", new NetworkSimulatorCoroutine(), Duration.ZERO, Instant.ofEpochMilli(0L),
+                new StartNetworkSimulator(
                         Address.of("timer"),
                         Address.fromString("echoer"),
                         () -> new SimpleLine(
@@ -66,8 +66,8 @@ public class StartUdpSimulatorTest {
                                 new SimpleSerializer())));
         simulator.addActor("sender", sender, Duration.ZERO, Instant.ofEpochMilli(0L),
                 Address.fromString("senderproxy:echoerproxy"));
-        simulator.addActor("senderproxy", new UdpSimulatorCoroutine(), Duration.ZERO, Instant.ofEpochMilli(0L),
-                new StartUdpSimulator(
+        simulator.addActor("senderproxy", new NetworkSimulatorCoroutine(), Duration.ZERO, Instant.ofEpochMilli(0L),
+                new StartNetworkSimulator(
                         Address.of("timer"),
                         Address.fromString("sender"),
                         () -> new SimpleLine(

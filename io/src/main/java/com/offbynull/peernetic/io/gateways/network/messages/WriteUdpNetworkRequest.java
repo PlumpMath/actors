@@ -30,13 +30,11 @@ public final class WriteUdpNetworkRequest extends IdentifiableNetworkRequest {
 
     /**
      * Constructs a {@link WriteUdpNetworkRequest} object.
-     * @param id id of socket
      * @param remoteAddress outgoing socket address
      * @param data send data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public WriteUdpNetworkRequest(int id, InetSocketAddress remoteAddress, byte[] data) {
-        super(id);
+    public WriteUdpNetworkRequest(InetSocketAddress remoteAddress, byte[] data) {
         Validate.notNull(remoteAddress);
         Validate.notNull(data);
         this.remoteAddress = remoteAddress;

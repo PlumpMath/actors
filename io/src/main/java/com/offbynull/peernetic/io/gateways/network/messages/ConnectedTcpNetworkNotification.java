@@ -21,17 +21,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public final class ConnectedTcpNetworkNotification extends IdentifiableNetworkNotification {
-
-    /**
-     * Constructs a {@link ConnectedTcpNetworkNotification}.
-     * @param id id of socket
-     */
-    public ConnectedTcpNetworkNotification(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "ConnectedTcpNetworkNotification{super=" + super.toString() + '}';
-    }
 }

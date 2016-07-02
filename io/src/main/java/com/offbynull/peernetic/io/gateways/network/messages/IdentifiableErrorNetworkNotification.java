@@ -23,17 +23,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  */
 public final class IdentifiableErrorNetworkNotification extends IdentifiableNetworkNotification {
 
-    /**
-     * Constructs a {@link IdentifiableErrorNetworkNotification} object.
-     * @param id id of socket
-     */
-    public IdentifiableErrorNetworkNotification(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "IdentifiableErrorNetworkNotification{super=" + super.toString() + '}';
-    }
-
 }

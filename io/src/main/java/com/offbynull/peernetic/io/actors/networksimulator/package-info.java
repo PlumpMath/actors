@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2015, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,11 +14,10 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Get ID to use for a new socket. Only possible response is {@link GetNextIdNetworkResponse}.
+ * Actor that simulates sending and receiving messages over UDP.
+ * 
  * @author Kasra Faghihi
  */
-public final class GetNextIdNetworkRequest implements NetworkRequest {
-}
+package com.offbynull.peernetic.io.actors.networksimulator;

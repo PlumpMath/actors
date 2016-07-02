@@ -21,26 +21,5 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public abstract class IdentifiableNetworkNotification implements NetworkNotification {
-    
-    private int id;
-
-    IdentifiableNetworkNotification(int id) {
-        this.id = id;
-    }
-
-    /**
-     * Get socket id.
-     * @return id of socket
-     */
-    public final int getId() {
-        return id;
-    }
-
-    // CHECKSTYLE:OFF:DesignForExtension
-    @Override
-    public String toString() {
-        return "IdentifiableNetworkNotification{" + "id=" + id + '}';
-    }
-    // CHECKSTYLE:ON:DesignForExtension
 
 }

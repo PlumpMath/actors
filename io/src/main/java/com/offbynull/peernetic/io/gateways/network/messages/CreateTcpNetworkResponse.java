@@ -21,17 +21,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public final class CreateTcpNetworkResponse extends IdentifiableNetworkResponse {
-
-    /**
-     * Constructs a {@link CreateTcpNetworkResponse} object.
-     * @param id id of socket
-     */
-    public CreateTcpNetworkResponse(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "CreateTcpNetworkResponse{super=" + super.toString() + '}';
-    }
 }

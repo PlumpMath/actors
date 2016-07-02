@@ -21,18 +21,4 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * @author Kasra Faghihi
  */
 public final class ReadClosedTcpNetworkNotification extends IdentifiableNetworkNotification {
-
-    /**
-     * Constructs a {@link ReadClosedTcpNetworkNotification} object.
-     * @param id id of socket
-     */
-    public ReadClosedTcpNetworkNotification(int id) {
-        super(id);
-    }
-
-    @Override
-    public String toString() {
-        return "IdentifiableErrorNetworkNotification{super=" + super.toString() + '}';
-    }
-
 }

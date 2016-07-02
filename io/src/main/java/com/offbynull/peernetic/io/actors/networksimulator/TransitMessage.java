@@ -14,38 +14,49 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.actors.udpsimulator;
+package com.offbynull.peernetic.io.actors.networksimulator;
 
 import com.offbynull.peernetic.core.actor.Context;
 import com.offbynull.peernetic.core.shuttle.Address;
+import java.time.Duration;
+import java.time.Instant;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Message coming in for processing by {@link Line}.
+ * Message processed by {@code Line}.
  * @author Kasra Faghihi
  */
-public final class DepartMessage {
-    private final Object message;
-    private final Address sourceAddress;
-    private final Address destinationAddress;
+public final class TransitMessage {
+    private Address sourceAddress;
+    private Address destinationAddress;
+    private Object message;
+    private Instant departTime;
+    private Duration duration;
 
     /**
-     * Constructs a {@link DepartMessage} instance.
+     * Constructs a {@link TransitMessage} instance.
      * @param message message
      * @param sourceAddress relative source address of message (relative to calling actor)
      * @param destinationAddress destination address of message
+     * @param departTime departure time
+     * @param duration amount of time before reaching destination
      * @throws NullPointerException if any argument is {@code null}
-     * @throws IllegalArgumentException if {@code destinationAddress} is empty
+     * @throws IllegalArgumentException if {@code destinationAddress} is empty, or if {@code duration} is negative
      */
-    public DepartMessage(Object message, Address sourceAddress, Address destinationAddress) {
-        Validate.notNull(message);
+    public TransitMessage(Address sourceAddress, Address destinationAddress, Object message, Instant departTime, Duration duration) {
         Validate.notNull(sourceAddress);
         Validate.notNull(destinationAddress);
+        Validate.notNull(message);
+        Validate.notNull(departTime);
+        Validate.notNull(duration);
+        Validate.isTrue(!duration.isNegative());
         // sourceId can be empty
         Validate.isTrue(!destinationAddress.isEmpty());
-        this.message = message;
         this.sourceAddress = sourceAddress;
         this.destinationAddress = destinationAddress;
+        this.message = message;
+        this.departTime = departTime;
+        this.duration = duration;
     }
 
     /**
@@ -72,6 +83,20 @@ public final class DepartMessage {
     public Address getDestinationAddress() {
         return destinationAddress;
     }
-
     
+    /**
+     * Get departure time.
+     * @return departure time
+     */
+    Instant getDepartTime() {
+        return departTime;
+    }
+
+    /**
+     * Get duration of time before this message is to reach its destination.
+     * @return duration of time until this message reaches its destination
+     */
+    Duration getDuration() {
+        return duration;
+    }
 }
