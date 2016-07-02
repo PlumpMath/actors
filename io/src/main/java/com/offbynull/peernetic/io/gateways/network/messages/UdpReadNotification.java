@@ -21,24 +21,36 @@ import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Send packet to a UDP socket. Possible responses are {@link WriteUdpNetworkResponse} and {@link IdentifiableErrorNetworkResponse}).
+ * UDP socket has received data.
  * @author Kasra Faghihi
  */
-public final class WriteUdpNetworkRequest {
+public final class UdpReadNotification {
+    private InetSocketAddress localAddress;
     private InetSocketAddress remoteAddress;
     private byte[] data;
 
     /**
-     * Constructs a {@link WriteUdpNetworkRequest} object.
-     * @param remoteAddress outgoing socket address
-     * @param data send data
+     * Constructs a {@link UdpReadNotification} object.
+     * @param localAddress address sent to
+     * @param remoteAddress address sent from
+     * @param data received data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public WriteUdpNetworkRequest(InetSocketAddress remoteAddress, byte[] data) {
+    public UdpReadNotification(InetSocketAddress localAddress, InetSocketAddress remoteAddress, byte[] data) {
+        Validate.notNull(localAddress);
         Validate.notNull(remoteAddress);
         Validate.notNull(data);
+        this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
         this.data = Arrays.copyOf(data, data.length);
+    }
+
+    /**
+     * Get local address.
+     * @return local address
+     */
+    public InetSocketAddress getLocalAddress() {
+        return localAddress;
     }
 
     /**
@@ -50,8 +62,8 @@ public final class WriteUdpNetworkRequest {
     }
 
     /**
-     * Get send packet.
-     * @return send packet
+     * Get data.
+     * @return data
      */
     public byte[] getData() {
         return Arrays.copyOf(data, data.length);
@@ -59,8 +71,8 @@ public final class WriteUdpNetworkRequest {
 
     @Override
     public String toString() {
-        return "WriteUdpNetworkRequest{remoteAddress=" + remoteAddress + ", data=" + Arrays.toString(data)
-                + '}';
+        return "UdpReadNotification{localAddress=" + localAddress + ", remoteAddress=" + remoteAddress
+                + ", data=" + Arrays.toString(data) + '}';
     }
 
 }

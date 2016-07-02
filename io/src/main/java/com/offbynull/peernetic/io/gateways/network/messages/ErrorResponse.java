@@ -17,13 +17,14 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Get local IP addresses. Possible responses are {@link GetLocalIpAddressesNetworkResponse} and {@link ErrorNetworkResponse}).
+ * Error response to a request.
  * @author Kasra Faghihi
  */
-public final class GetLocalIpAddressesNetworkRequest {
+public final class ErrorResponse {
 
     @Override
     public String toString() {
-        return "GetLocalIpAddressesNetworkRequest{" + '}';
+        return "ErrorResponse{" + '}';
     }
+
 }

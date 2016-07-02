@@ -22,15 +22,15 @@ import java.util.Arrays;
  * TCP socket has received data.
  * @author Kasra Faghihi
  */
-public final class ReadTcpNetworkNotification {
+public final class TcpReadNotification {
     private byte[] data;
 
     /**
-     * Constructs a {@link ReadTcpNetworkNotification} object.
+     * Constructs a {@link TcpReadNotification} object.
      * @param data received data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public ReadTcpNetworkNotification(byte[] data) {
+    public TcpReadNotification(byte[] data) {
         this.data = Arrays.copyOf(data, data.length);
     }
 
@@ -44,7 +44,7 @@ public final class ReadTcpNetworkNotification {
 
     @Override
     public String toString() {
-        return "ReadTcpNetworkNotification{data=" + Arrays.toString(data) + '}';
+        return "TcpReadNotification{data=" + Arrays.toString(data) + '}';
     }
 
 }

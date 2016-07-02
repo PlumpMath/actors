@@ -17,14 +17,15 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Created a UDP socket. Successful response to {@link CreateUdpNetworkRequest}.
+ * Error notification associated with a socket.  Does not mean that the socket associated with this ID is dead (no longer usable) -- you
+ * should still close the socket.
  * @author Kasra Faghihi
  */
-public final class CreateUdpNetworkResponse {
+public final class ErrorNotification {
 
     @Override
     public String toString() {
-        return "CreateUdpNetworkResponse{" + '}';
+        return "ErrorNotification{" + '}';
     }
 
 }

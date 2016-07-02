@@ -20,25 +20,25 @@ import java.net.InetAddress;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Create a TCP socket. Possible responses are {@link CreateTcpNetworkResponse} and {@link IdentifiableErrorNetworkResponse}). Shortly after
- * creation, the socket will connect and a {@link ConnectedTcpNetworkNotification} will be sent out to the creator.
+ * Create a TCP socket. Possible responses are {@link TcpCreateResponse} and {@link ErrorResponse}). Shortly after
+ * creation, the socket will connect and a {@link TcpConnectedNotification} will be sent out to the creator.
  * @author Kasra Faghihi
  */
-public final class CreateTcpNetworkRequest {
+public final class TcpCreateRequest {
 
     private InetAddress sourceAddress;
     private InetAddress destinationAddress;
     private int destinationPort;
 
     /**
-     * Constructs a {@link CreateTcpNetworkRequest} object.
+     * Constructs a {@link TcpCreateRequest} object.
      * @param sourceAddress source address of the socket to be created
      * @param destinationAddress destination address of the socket to be created
      * @param destinationPort destination port of the socket to be created
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code 1 > destinationPort > 65535}
      */
-    public CreateTcpNetworkRequest(InetAddress sourceAddress, InetAddress destinationAddress,
+    public TcpCreateRequest(InetAddress sourceAddress, InetAddress destinationAddress,
             int destinationPort) {
         Validate.notNull(sourceAddress);
         Validate.notNull(destinationAddress);
@@ -75,7 +75,7 @@ public final class CreateTcpNetworkRequest {
 
     @Override
     public String toString() {
-        return "CreateTcpNetworkRequest{" + ", sourceAddress=" + sourceAddress + ", destinationAddress="
+        return "TcpCreateRequest{" + ", sourceAddress=" + sourceAddress + ", destinationAddress="
                 + destinationAddress + ", destinationPort=" + destinationPort + '}';
     }
 }

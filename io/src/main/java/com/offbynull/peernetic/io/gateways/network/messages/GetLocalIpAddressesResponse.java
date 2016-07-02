@@ -22,18 +22,18 @@ import java.util.Set;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Got local IP addresses. Successful response to {@link GetLocalIpAddressesNetworkRequest}.
+ * Got local IP addresses. Successful response to {@link GetLocalIpAddressesRequest}.
  * @author Kasra Faghihi
  */
-public final class GetLocalIpAddressesNetworkResponse {
+public final class GetLocalIpAddressesResponse {
     private Set<InetAddress> localAddresses;
 
     /**
-     * Constructs a {@link GetLocalIpAddressesNetworkRequest} object.
+     * Constructs a {@link GetLocalIpAddressesResponse} object.
      * @param localAddresses local addresses
      * @throws NullPointerException if any argument is {@code null} or contains {@code null}
      */
-    public GetLocalIpAddressesNetworkResponse(Set<InetAddress> localAddresses) {
+    public GetLocalIpAddressesResponse(Set<InetAddress> localAddresses) {
         Validate.notNull(localAddresses);
         Validate.noNullElements(localAddresses);
         this.localAddresses = new HashSet<>(localAddresses);
@@ -49,7 +49,7 @@ public final class GetLocalIpAddressesNetworkResponse {
 
     @Override
     public String toString() {
-        return "GetLocalIpAddressesNetworkResponse{" + "localAddresses=" + localAddresses + '}';
+        return "GetLocalIpAddressesResponse{" + "localAddresses=" + localAddresses + '}';
     }
     
 }

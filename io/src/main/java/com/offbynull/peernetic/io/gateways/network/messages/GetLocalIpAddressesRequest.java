@@ -17,15 +17,13 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Error notification associated with a socket.  Does not mean that the socket associated with this ID is dead (no longer usable) -- you
- * should still close the socket.
+ * Get local IP addresses. Possible responses are {@link GetLocalIpAddressesResponse} and {@link ErrorResponse}).
  * @author Kasra Faghihi
  */
-public final class IdentifiableErrorNetworkNotification {
+public final class GetLocalIpAddressesRequest {
 
     @Override
     public String toString() {
-        return "IdentifiableErrorNetworkNotification{" + '}';
+        return "GetLocalIpAddressesRequest{" + '}';
     }
-
 }

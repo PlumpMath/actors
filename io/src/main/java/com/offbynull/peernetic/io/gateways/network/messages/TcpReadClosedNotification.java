@@ -17,15 +17,13 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Closed a socket. Successful response to {@link CloseNetworkRequest}.
- * <p>
- * If an ID is used after issuing a close, the results are undefined.
+ * TCP read stream has been closed.
  * @author Kasra Faghihi
  */
-public final class CloseNetworkResponse {
+public final class TcpReadClosedNotification {
 
     @Override
     public String toString() {
-        return "CloseNetworkResponse{" + '}';
+        return "TcpReadClosedNotification{" + '}';
     }
 }

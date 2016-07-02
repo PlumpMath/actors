@@ -17,15 +17,13 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Non-identifiable error response. Error response to {@link CreateTcpNetworkRequest}, {@link CreateUdpNetworkRequest}, or
- * {@link GetLocalIpAddressesNetworkRequest}.
+ * Connected a TCP socket. Occurs shortly after a TCP socket has been created.
  * @author Kasra Faghihi
  */
-public final class ErrorNetworkResponse {
+public final class TcpConnectedNotification {
 
     @Override
     public String toString() {
-        return "ErrorNetworkResponse{" + '}';
+        return "TcpConnectedNotification{" + '}';
     }
-
 }

@@ -17,13 +17,13 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Connected a TCP socket. Occurs shortly after a TCP socket has been created.
+ * Write buffer for UDP socket is empty.
  * @author Kasra Faghihi
  */
-public final class ConnectedTcpNetworkNotification {
+public final class UdpWriteEmptyNotification {
 
     @Override
     public String toString() {
-        return "ConnectedTcpNetworkNotification{" + '}';
+        return "UdpWriteEmptyNotification{" + '}';
     }
 }

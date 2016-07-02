@@ -16,37 +16,35 @@
  */
 package com.offbynull.peernetic.io.gateways.network.messages;
 
-import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Send data to a TCP socket. Possible responses are {@link WriteTcpNetworkResponse} and {@link IdentifiableErrorNetworkResponse}).
+ * Sent packet through a UDP socket. Successful response to {@link UdpWriteRequest}.
  * @author Kasra Faghihi
  */
-public final class WriteTcpNetworkRequest {
-    private byte[] data;
+public final class UdpWriteResponse {
+    private int amountWritten;
 
     /**
-     * Constructs a {@link WriteTcpNetworkRequest} object.
-     * @param data send data
-     * @throws NullPointerException if any argument is {@code null}
+     * Constructs a {@link UdpWriteResponse} object.
+     * @param amountWritten amount of data written out in packet (in bytes)
      */
-    public WriteTcpNetworkRequest(byte[] data) {
-        Validate.notNull(data);
-        this.data = Arrays.copyOf(data, data.length);
+    public UdpWriteResponse(int amountWritten) {
+        Validate.inclusiveBetween(0, Integer.MAX_VALUE, amountWritten);
+        this.amountWritten = amountWritten;
     }
 
     /**
-     * Get send data.
-     * @return send data
+     * Amount of data written out .
+     * @return bytes written out
      */
-    public byte[] getData() {
-        return Arrays.copyOf(data, data.length);
+    public int getAmountWritten() {
+        return amountWritten;
     }
 
     @Override
     public String toString() {
-        return "WriteTcpNetworkRequest{data=" + Arrays.toString(data) + '}';
+        return "UdpWriteResponse{amountWritten=" + amountWritten + '}';
     }
-
+    
 }

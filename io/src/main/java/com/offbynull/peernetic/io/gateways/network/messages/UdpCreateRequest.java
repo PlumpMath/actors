@@ -16,35 +16,36 @@
  */
 package com.offbynull.peernetic.io.gateways.network.messages;
 
+import java.net.InetAddress;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Sent packet through a UDP socket. Successful response to {@link WriteUdpNetworkRequest}.
+ * Create a UDP socket. Possible responses are {@link UdpCreateResponse} and {@link ErrorResponse}).
  * @author Kasra Faghihi
  */
-public final class WriteUdpNetworkResponse {
-    private int amountWritten;
+public final class UdpCreateRequest {
+    private InetAddress sourceAddress;
 
     /**
-     * Constructs a {@link WriteUdpNetworkResponse} object.
-     * @param amountWritten amount of data written out in packet (in bytes)
+     * Constructs a {@link UdpCreateRequest} object.
+     * @param sourceAddress source address of the socket to be created
+     * @throws NullPointerException if any argument is {@code null}
      */
-    public WriteUdpNetworkResponse(int amountWritten) {
-        Validate.inclusiveBetween(0, Integer.MAX_VALUE, amountWritten);
-        this.amountWritten = amountWritten;
+    public UdpCreateRequest(InetAddress sourceAddress) {
+        Validate.notNull(sourceAddress);
+        this.sourceAddress = sourceAddress;
     }
 
     /**
-     * Amount of data written out .
-     * @return bytes written out
+     * Source address of the socket to be created.
+     * @return source address
      */
-    public int getAmountWritten() {
-        return amountWritten;
+    public InetAddress getSourceAddress() {
+        return sourceAddress;
     }
 
     @Override
     public String toString() {
-        return "WriteUdpNetworkResponse{amountWritten=" + amountWritten + '}';
+        return "UdpCreateRequest{" + "sourceAddress=" + sourceAddress + '}';
     }
-    
 }

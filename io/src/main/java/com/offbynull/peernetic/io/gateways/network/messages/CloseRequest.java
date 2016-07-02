@@ -17,13 +17,13 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * TCP read stream has been closed.
+ * Close a TCP/UDP socket. Only possible response is {@link CloseResponse}.
  * @author Kasra Faghihi
  */
-public final class ReadClosedTcpNetworkNotification {
+public final class CloseRequest {
 
     @Override
     public String toString() {
-        return "ReadClosedTcpNetworkNotification{" + '}';
+        return "CloseRequest{" + '}';
     }
 }

@@ -17,13 +17,14 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Write buffer for UDP socket is empty.
+ * Created a UDP socket. Successful response to {@link UdpCreateRequest}.
  * @author Kasra Faghihi
  */
-public final class WriteEmptyUdpNetworkNotification {
+public final class UdpCreateResponse {
 
     @Override
     public String toString() {
-        return "WriteEmptyUdpNetworkNotification{" + '}';
+        return "UdpCreateResponse{" + '}';
     }
+
 }

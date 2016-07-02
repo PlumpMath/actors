@@ -17,14 +17,13 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Error response associated with a request to a socket.  Does not mean that the socket associated with this ID is dead (no longer usable)
- * -- you should still close the socket.
+ * Created a TCP socket. Successful response to {@link TcpCreateRequest}.
  * @author Kasra Faghihi
  */
-public final class IdentifiableErrorNetworkResponse {
+public final class TcpCreateResponse {
 
     @Override
     public String toString() {
-        return "IdentifiableErrorNetworkResponse{" + '}';
+        return "TcpCreateResponse{" + '}';
     }
 }

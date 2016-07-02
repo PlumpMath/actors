@@ -17,13 +17,14 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Close a socket. Only possible response is {@link CloseNetworkResponse}.
+ * Write buffer for TCP socket is empty.
  * @author Kasra Faghihi
  */
-public final class CloseNetworkRequest {
+public final class TcpWriteEmptyNotification {
 
     @Override
     public String toString() {
-        return "CloseNetworkRequest{" + '}';
+        return "TcpWriteEmptyNotification{" + '}';
     }
+
 }
