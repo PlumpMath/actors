@@ -20,5 +20,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Get local IP addresses. Possible responses are {@link GetLocalIpAddressesNetworkResponse} and {@link ErrorNetworkResponse}).
  * @author Kasra Faghihi
  */
-public final class GetLocalIpAddressesNetworkRequest implements NetworkRequest {
+public final class GetLocalIpAddressesNetworkRequest {
+
+    @Override
+    public String toString() {
+        return "GetLocalIpAddressesNetworkRequest{" + '}';
+    }
 }

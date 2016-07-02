@@ -20,5 +20,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Close a socket. Only possible response is {@link CloseNetworkResponse}.
  * @author Kasra Faghihi
  */
-public final class CloseNetworkRequest extends IdentifiableNetworkRequest {
+public final class CloseNetworkRequest {
+
+    @Override
+    public String toString() {
+        return "CloseNetworkRequest{" + '}';
+    }
 }

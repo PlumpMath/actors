@@ -21,5 +21,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * -- you should still close the socket.
  * @author Kasra Faghihi
  */
-public final class IdentifiableErrorNetworkResponse extends IdentifiableNetworkResponse {
+public final class IdentifiableErrorNetworkResponse {
+
+    @Override
+    public String toString() {
+        return "IdentifiableErrorNetworkResponse{" + '}';
+    }
 }

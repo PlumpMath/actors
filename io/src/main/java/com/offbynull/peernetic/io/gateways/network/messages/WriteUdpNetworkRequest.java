@@ -24,7 +24,7 @@ import org.apache.commons.lang3.Validate;
  * Send packet to a UDP socket. Possible responses are {@link WriteUdpNetworkResponse} and {@link IdentifiableErrorNetworkResponse}).
  * @author Kasra Faghihi
  */
-public final class WriteUdpNetworkRequest extends IdentifiableNetworkRequest {
+public final class WriteUdpNetworkRequest {
     private InetSocketAddress remoteAddress;
     private byte[] data;
 
@@ -59,7 +59,7 @@ public final class WriteUdpNetworkRequest extends IdentifiableNetworkRequest {
 
     @Override
     public String toString() {
-        return "WriteUdpNetworkRequest{super=" + super.toString() + "remoteAddress=" + remoteAddress + ", data=" + Arrays.toString(data)
+        return "WriteUdpNetworkRequest{remoteAddress=" + remoteAddress + ", data=" + Arrays.toString(data)
                 + '}';
     }
 

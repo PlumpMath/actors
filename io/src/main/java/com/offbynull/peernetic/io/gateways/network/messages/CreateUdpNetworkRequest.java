@@ -23,7 +23,7 @@ import org.apache.commons.lang3.Validate;
  * Create a UDP socket. Possible responses are {@link CreateUdpNetworkResponse} and {@link IdentifiableErrorNetworkResponse}).
  * @author Kasra Faghihi
  */
-public final class CreateUdpNetworkRequest extends IdentifiableNetworkRequest {
+public final class CreateUdpNetworkRequest {
     private InetAddress sourceAddress;
 
     /**
@@ -42,5 +42,10 @@ public final class CreateUdpNetworkRequest extends IdentifiableNetworkRequest {
      */
     public InetAddress getSourceAddress() {
         return sourceAddress;
+    }
+
+    @Override
+    public String toString() {
+        return "CreateUdpNetworkRequest{" + "sourceAddress=" + sourceAddress + '}';
     }
 }

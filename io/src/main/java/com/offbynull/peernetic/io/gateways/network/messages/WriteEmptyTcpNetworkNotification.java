@@ -20,6 +20,11 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Write buffer for TCP socket is empty.
  * @author Kasra Faghihi
  */
-public final class WriteEmptyTcpNetworkNotification extends IdentifiableNetworkNotification {
+public final class WriteEmptyTcpNetworkNotification {
+
+    @Override
+    public String toString() {
+        return "WriteEmptyTcpNetworkNotification{" + '}';
+    }
 
 }

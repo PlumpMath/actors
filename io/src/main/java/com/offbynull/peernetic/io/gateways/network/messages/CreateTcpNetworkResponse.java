@@ -20,5 +20,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Created a TCP socket. Successful response to {@link CreateTcpNetworkRequest}.
  * @author Kasra Faghihi
  */
-public final class CreateTcpNetworkResponse extends IdentifiableNetworkResponse {
+public final class CreateTcpNetworkResponse {
+
+    @Override
+    public String toString() {
+        return "CreateTcpNetworkResponse{" + '}';
+    }
 }

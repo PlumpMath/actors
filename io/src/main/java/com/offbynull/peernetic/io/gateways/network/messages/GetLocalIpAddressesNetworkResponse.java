@@ -25,7 +25,7 @@ import org.apache.commons.lang3.Validate;
  * Got local IP addresses. Successful response to {@link GetLocalIpAddressesNetworkRequest}.
  * @author Kasra Faghihi
  */
-public final class GetLocalIpAddressesNetworkResponse implements NetworkResponse {
+public final class GetLocalIpAddressesNetworkResponse {
     private Set<InetAddress> localAddresses;
 
     /**

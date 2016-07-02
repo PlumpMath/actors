@@ -22,7 +22,7 @@ import org.apache.commons.lang3.Validate;
  * Sent packet through a UDP socket. Successful response to {@link WriteUdpNetworkRequest}.
  * @author Kasra Faghihi
  */
-public final class WriteUdpNetworkResponse extends IdentifiableNetworkResponse {
+public final class WriteUdpNetworkResponse {
     private int amountWritten;
 
     /**
@@ -44,7 +44,7 @@ public final class WriteUdpNetworkResponse extends IdentifiableNetworkResponse {
 
     @Override
     public String toString() {
-        return "WriteUdpNetworkResponse{super=" + super.toString() + "amountWritten=" + amountWritten + '}';
+        return "WriteUdpNetworkResponse{amountWritten=" + amountWritten + '}';
     }
     
 }

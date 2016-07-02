@@ -22,7 +22,7 @@ import java.util.Arrays;
  * TCP socket has received data.
  * @author Kasra Faghihi
  */
-public final class ReadTcpNetworkNotification extends IdentifiableNetworkNotification {
+public final class ReadTcpNetworkNotification {
     private byte[] data;
 
     /**
@@ -44,7 +44,7 @@ public final class ReadTcpNetworkNotification extends IdentifiableNetworkNotific
 
     @Override
     public String toString() {
-        return "ReadTcpNetworkNotification{super=" + super.toString() + "data=" + Arrays.toString(data) + '}';
+        return "ReadTcpNetworkNotification{data=" + Arrays.toString(data) + '}';
     }
 
 }

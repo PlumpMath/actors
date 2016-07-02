@@ -24,7 +24,7 @@ import org.apache.commons.lang3.Validate;
  * creation, the socket will connect and a {@link ConnectedTcpNetworkNotification} will be sent out to the creator.
  * @author Kasra Faghihi
  */
-public final class CreateTcpNetworkRequest extends IdentifiableNetworkRequest {
+public final class CreateTcpNetworkRequest {
 
     private InetAddress sourceAddress;
     private InetAddress destinationAddress;

@@ -20,5 +20,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Connected a TCP socket. Occurs shortly after a TCP socket has been created.
  * @author Kasra Faghihi
  */
-public final class ConnectedTcpNetworkNotification extends IdentifiableNetworkNotification {
+public final class ConnectedTcpNetworkNotification {
+
+    @Override
+    public String toString() {
+        return "ConnectedTcpNetworkNotification{" + '}';
+    }
 }

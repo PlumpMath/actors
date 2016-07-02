@@ -23,7 +23,7 @@ import org.apache.commons.lang3.Validate;
  * Send data to a TCP socket. Possible responses are {@link WriteTcpNetworkResponse} and {@link IdentifiableErrorNetworkResponse}).
  * @author Kasra Faghihi
  */
-public final class WriteTcpNetworkRequest extends IdentifiableNetworkRequest {
+public final class WriteTcpNetworkRequest {
     private byte[] data;
 
     /**
@@ -46,7 +46,7 @@ public final class WriteTcpNetworkRequest extends IdentifiableNetworkRequest {
 
     @Override
     public String toString() {
-        return "WriteTcpNetworkRequest{super=" + super.toString() + "data=" + Arrays.toString(data) + '}';
+        return "WriteTcpNetworkRequest{data=" + Arrays.toString(data) + '}';
     }
 
 }

@@ -20,5 +20,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * TCP read stream has been closed.
  * @author Kasra Faghihi
  */
-public final class ReadClosedTcpNetworkNotification extends IdentifiableNetworkNotification {
+public final class ReadClosedTcpNetworkNotification {
+
+    @Override
+    public String toString() {
+        return "ReadClosedTcpNetworkNotification{" + '}';
+    }
 }

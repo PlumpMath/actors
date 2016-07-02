@@ -20,5 +20,10 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Write buffer for UDP socket is empty.
  * @author Kasra Faghihi
  */
-public final class WriteEmptyUdpNetworkNotification extends IdentifiableNetworkNotification {
+public final class WriteEmptyUdpNetworkNotification {
+
+    @Override
+    public String toString() {
+        return "WriteEmptyUdpNetworkNotification{" + '}';
+    }
 }

@@ -21,7 +21,7 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * {@link GetLocalIpAddressesNetworkRequest}.
  * @author Kasra Faghihi
  */
-public final class ErrorNetworkResponse implements NetworkResponse {
+public final class ErrorNetworkResponse {
 
     @Override
     public String toString() {

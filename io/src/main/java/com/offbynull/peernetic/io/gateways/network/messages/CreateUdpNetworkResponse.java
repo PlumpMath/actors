@@ -20,6 +20,11 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * Created a UDP socket. Successful response to {@link CreateUdpNetworkRequest}.
  * @author Kasra Faghihi
  */
-public final class CreateUdpNetworkResponse extends IdentifiableNetworkResponse {
+public final class CreateUdpNetworkResponse {
+
+    @Override
+    public String toString() {
+        return "CreateUdpNetworkResponse{" + '}';
+    }
 
 }

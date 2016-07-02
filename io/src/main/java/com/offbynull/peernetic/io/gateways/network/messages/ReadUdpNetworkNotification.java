@@ -24,7 +24,7 @@ import org.apache.commons.lang3.Validate;
  * UDP socket has received data.
  * @author Kasra Faghihi
  */
-public final class ReadUdpNetworkNotification extends IdentifiableNetworkNotification {
+public final class ReadUdpNetworkNotification {
     private InetSocketAddress localAddress;
     private InetSocketAddress remoteAddress;
     private byte[] data;
@@ -71,7 +71,7 @@ public final class ReadUdpNetworkNotification extends IdentifiableNetworkNotific
 
     @Override
     public String toString() {
-        return "ReadUdpNetworkNotification{super=" + super.toString() + "localAddress=" + localAddress + ", remoteAddress=" + remoteAddress
+        return "ReadUdpNetworkNotification{localAddress=" + localAddress + ", remoteAddress=" + remoteAddress
                 + ", data=" + Arrays.toString(data) + '}';
     }
 

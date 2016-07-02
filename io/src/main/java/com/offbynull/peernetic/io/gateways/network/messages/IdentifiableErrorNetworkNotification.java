@@ -21,6 +21,11 @@ package com.offbynull.peernetic.io.gateways.network.messages;
  * should still close the socket.
  * @author Kasra Faghihi
  */
-public final class IdentifiableErrorNetworkNotification extends IdentifiableNetworkNotification {
+public final class IdentifiableErrorNetworkNotification {
+
+    @Override
+    public String toString() {
+        return "IdentifiableErrorNetworkNotification{" + '}';
+    }
 
 }

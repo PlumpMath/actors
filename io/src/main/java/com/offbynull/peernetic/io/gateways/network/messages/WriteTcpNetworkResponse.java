@@ -22,7 +22,7 @@ import org.apache.commons.lang3.Validate;
  * Sent data through a TCP socket. Successful response to {@link WriteTcpNetworkRequest}.
  * @author Kasra Faghihi
  */
-public final class WriteTcpNetworkResponse extends IdentifiableNetworkResponse {
+public final class WriteTcpNetworkResponse {
     private int amountWritten;
 
     /**
@@ -44,7 +44,7 @@ public final class WriteTcpNetworkResponse extends IdentifiableNetworkResponse {
 
     @Override
     public String toString() {
-        return "WriteTcpNetworkResponse{super=" + super.toString() + "amountWritten=" + amountWritten + '}';
+        return "WriteTcpNetworkResponse{amountWritten=" + amountWritten + '}';
     }
     
 }
