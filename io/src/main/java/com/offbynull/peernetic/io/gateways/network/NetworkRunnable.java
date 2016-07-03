@@ -342,6 +342,10 @@ final class NetworkRunnable implements Runnable {
         LOG.debug("{} TCP accept", entry);
         try {
             SocketChannel socketChannel = channel.accept();
+            if (socketChannel == null) {
+                LOG.debug("TCP accept returned nothing");
+                return;
+            }
             socketChannel.configureBlocking(false);
 
             
@@ -365,7 +369,7 @@ final class NetworkRunnable implements Runnable {
                             selfPrefix.appendSuffix(selfSuffix),
                             proxyPrefix.appendSuffix(proxySuffix)));
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorResponse());
+            queueOutgoingMessage(entry, new ErrorNotification());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
