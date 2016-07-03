@@ -17,7 +17,7 @@
 package com.offbynull.peernetic.io.gateways.network.messages;
 
 /**
- * Close a TCP/UDP socket. Only possible response is {@link CloseResponse}.
+ * Close a socket. Possible responses are {@link CloseResponse} and {@link ErrorResponse}.
  * @author Kasra Faghihi
  */
 public final class CloseRequest {

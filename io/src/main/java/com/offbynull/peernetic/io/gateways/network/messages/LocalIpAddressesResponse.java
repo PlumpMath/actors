@@ -25,7 +25,7 @@ import org.apache.commons.lang3.Validate;
  * Got local IP addresses. Successful response to {@link GetLocalIpAddressesRequest}.
  * @author Kasra Faghihi
  */
-public final class GetLocalIpAddressesResponse {
+public final class LocalIpAddressesResponse {
     private Set<InetAddress> localAddresses;
 
     /**
@@ -33,7 +33,7 @@ public final class GetLocalIpAddressesResponse {
      * @param localAddresses local addresses
      * @throws NullPointerException if any argument is {@code null} or contains {@code null}
      */
-    public GetLocalIpAddressesResponse(Set<InetAddress> localAddresses) {
+    public LocalIpAddressesResponse(Set<InetAddress> localAddresses) {
         Validate.notNull(localAddresses);
         Validate.noNullElements(localAddresses);
         this.localAddresses = new HashSet<>(localAddresses);

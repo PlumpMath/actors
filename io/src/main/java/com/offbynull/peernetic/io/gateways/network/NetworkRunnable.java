@@ -29,8 +29,8 @@ import com.offbynull.peernetic.io.gateways.network.messages.TcpCreateResponse;
 import com.offbynull.peernetic.io.gateways.network.messages.UdpCreateRequest;
 import com.offbynull.peernetic.io.gateways.network.messages.UdpCreateResponse;
 import com.offbynull.peernetic.io.gateways.network.messages.ErrorResponse;
-import com.offbynull.peernetic.io.gateways.network.messages.GetLocalIpAddressesRequest;
-import com.offbynull.peernetic.io.gateways.network.messages.GetLocalIpAddressesResponse;
+import com.offbynull.peernetic.io.gateways.network.messages.LocalIpAddressesRequest;
+import com.offbynull.peernetic.io.gateways.network.messages.LocalIpAddressesResponse;
 import com.offbynull.peernetic.io.gateways.network.messages.ErrorNotification;
 import com.offbynull.peernetic.io.gateways.network.messages.TcpReadClosedNotification;
 import com.offbynull.peernetic.io.gateways.network.messages.TcpReadNotification;
@@ -60,6 +60,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import org.apache.commons.collections4.map.UnmodifiableMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -79,10 +80,12 @@ final class NetworkRunnable implements Runnable {
     private final Selector selector;
     
     // intended only for use by thread -- no outside access
-    private final Map<Address, NetworkEntry<?>> idMap;
+    private final Map<Address, NetworkEntry<?>> idMap; // get by self suffix
     private final Map<Channel, NetworkEntry<?>> channelMap;
     private final ByteBuffer buffer;
     private LinkedList<Message> localOutQueue;
+    
+    private final UnmodifiableMap<Class<?>, Processor> processors;
 
     NetworkRunnable(Address selfPrefix,
             Address proxyPrefix,
@@ -94,6 +97,15 @@ final class NetworkRunnable implements Runnable {
         Validate.notNull(proxyShuttle);
         Validate.notNull(bus);
         Validate.isTrue(bufferSize > 0);
+        
+        Map<Class<?>, Processor> processorsMap = new HashMap<>();
+        processorsMap.put(TcpCreateRequest.class, this::processTcpCreateRequest);
+        processorsMap.put(UdpCreateRequest.class, this::processUdpCreateRequest);
+        processorsMap.put(LocalIpAddressesRequest.class, this::processLocalIpAddressesRequest);
+        processorsMap.put(TcpWriteRequest.class, this::processTcpWriteRequest);
+        processorsMap.put(UdpWriteRequest.class, this::processUdpWriteRequest);
+        processorsMap.put(CloseRequest.class, this::processCloseRequest);
+        this.processors = (UnmodifiableMap<Class<?>, Processor>) UnmodifiableMap.unmodifiableMap(processorsMap);
         
         this.selfPrefix = selfPrefix;
         this.proxyPrefix = proxyPrefix;
@@ -134,6 +146,7 @@ final class NetworkRunnable implements Runnable {
             while (true) {
                 localOutQueue.clear();
 
+                // Handle incoming network IO events
                 selector.select();
                 for (SelectionKey key : selector.selectedKeys()) {
                     if (!key.isValid()) {
@@ -183,129 +196,149 @@ final class NetworkRunnable implements Runnable {
     private void handleSelectForTcpChannel(SelectionKey selectionKey, TcpNetworkEntry entry) {
         SocketChannel channel = (SocketChannel) entry.getChannel();
         if (selectionKey.isConnectable()) {
-            LOG.debug("{} TCP connection", entry);
-            try {
-                // This block is sometimes called more than once for each connection -- we still call finishConnect but we also check to
-                // see if we're already connected before sending the CreateTcpSocketNetworkResponse msg
-                boolean alreadyConnected = channel.isConnected();
-                boolean connected = channel.finishConnect();
-                if (!alreadyConnected && connected) {
-                    entry.setConnecting(false);
-                    queueOutgoingMessage(entry, new TcpConnectedNotification());
-                }
-            } catch (IOException ioe) {
-                queueOutgoingMessage(entry, new ErrorNotification());
-                LOG.error("Exception encountered: {}", entry, ioe);
-            }
+            tcpConnectReady(channel, entry);
         }
         if (selectionKey.isReadable()) {
-            try {
-                buffer.clear();
-                int readCount = channel.read(buffer);
-                buffer.flip();
-
-                LOG.debug("{} TCP read {} bytes", entry, readCount);
-
-                if (readCount == -1) {
-                    // read finished, set flag to stop requesting read notifications
-                    entry.setReadFinished(true);
-                    queueOutgoingMessage(entry, new TcpReadClosedNotification());
-                } else if (buffer.remaining() > 0) {
-                    byte[] bufferAsArray = InternalUtils.copyContentsToArray(buffer);
-                    queueOutgoingMessage(entry, new TcpReadNotification(bufferAsArray));
-                }
-            } catch (IOException ioe) {
-                queueOutgoingMessage(entry, new ErrorNotification());
-                LOG.error("Exception encountered: {}", entry, ioe);
-            }
+            tcpReadReady(channel, entry);
         }
         if (selectionKey.isWritable()) {
-            try {
-                LinkedList<ByteBuffer> outBuffers = entry.getOutgoingBuffers();
-                // if OP_WRITE was set, WriteTcpBlockNetworkRequest is pending (we should have at least 1 outgoing buffer)
-                int writeCount = 0;
-                if (outBuffers.isEmpty() && !entry.isNotifiedOfWritable()) {
-                    LOG.debug("{} TCP write empty", entry);
+            tcpWriteReady(channel, entry);
+        }
+    }
 
-                    // if empty but not notified yet
-                    entry.setNotifiedOfWritable(true);
-                    queueOutgoingMessage(entry, new TcpWriteEmptyNotification());
-                } else {
-                    while (!outBuffers.isEmpty()) {
-                        ByteBuffer outBuffer = outBuffers.getFirst();
-                        writeCount += channel.write(outBuffer);
-
-                        LOG.debug("{} TCP wrote {} bytes", entry, writeCount);
-
-                        if (outBuffer.remaining() > 0) {
-                            // not everything was written, which means we can't send anymore data until we get another OP_WRITE, so leave
-                            break;
-                        }
-                        outBuffers.removeFirst();
-                        queueOutgoingMessage(entry, new TcpWriteResponse(writeCount));
-                    }
-                }
-            } catch (IOException ioe) {
-                queueOutgoingMessage(entry, new ErrorNotification());
-                LOG.error("Exception encountered: {}", entry, ioe);
+    private void tcpConnectReady(SocketChannel channel, TcpNetworkEntry entry) {
+        LOG.debug("{} TCP connection", entry);
+        try {
+            // This block is sometimes called more than once for each connection -- we still call finishConnect but we also check to
+            // see if we're already connected before sending the CreateTcpSocketNetworkResponse msg
+            boolean alreadyConnected = channel.isConnected();
+            boolean connected = channel.finishConnect();
+            if (!alreadyConnected && connected) {
+                entry.setConnecting(false);
+                queueOutgoingMessage(entry, new TcpConnectedNotification());
             }
+        } catch (IOException ioe) {
+            queueOutgoingMessage(entry, new ErrorNotification());
+            LOG.error("Exception encountered: {}", entry, ioe);
+        }
+    }
+
+    private void tcpReadReady(SocketChannel channel, TcpNetworkEntry entry) {
+        try {
+            buffer.clear();
+            int readCount = channel.read(buffer);
+            buffer.flip();
+
+            LOG.debug("{} TCP read {} bytes", entry, readCount);
+
+            if (readCount == -1) {
+                // read finished, set flag to stop requesting read notifications
+                entry.setReadFinished(true);
+                queueOutgoingMessage(entry, new TcpReadClosedNotification());
+            } else if (buffer.remaining() > 0) {
+                byte[] bufferAsArray = InternalUtils.copyContentsToArray(buffer);
+                queueOutgoingMessage(entry, new TcpReadNotification(bufferAsArray));
+            }
+        } catch (IOException ioe) {
+            queueOutgoingMessage(entry, new ErrorNotification());
+            LOG.error("Exception encountered: {}", entry, ioe);
+        }
+    }   
+
+    private void tcpWriteReady(SocketChannel channel, TcpNetworkEntry entry) {
+        try {
+            LinkedList<ByteBuffer> outBuffers = entry.getOutgoingBuffers();
+            // if OP_WRITE was set, WriteTcpBlockNetworkRequest is pending (we should have at least 1 outgoing buffer)
+            int writeCount = 0;
+            if (outBuffers.isEmpty() && !entry.isNotifiedOfWritable()) {
+                LOG.debug("{} TCP write empty", entry);
+
+                // if empty but not notified yet
+                entry.setNotifiedOfWritable(true);
+                queueOutgoingMessage(entry, new TcpWriteEmptyNotification());
+            } else {
+                while (!outBuffers.isEmpty()) {
+                    ByteBuffer outBuffer = outBuffers.getFirst();
+                    writeCount += channel.write(outBuffer);
+
+                    LOG.debug("{} TCP wrote {} bytes", entry, writeCount);
+
+                    if (outBuffer.remaining() > 0) {
+                        // not everything was written, which means we can't send anymore data until we get another OP_WRITE, so leave
+                        break;
+                    }
+                    outBuffers.removeFirst();
+                    queueOutgoingMessage(entry, new TcpWriteResponse(writeCount));
+                }
+            }
+        } catch (IOException ioe) {
+            queueOutgoingMessage(entry, new ErrorNotification());
+            LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
 
     private void handleSelectForUdpChannel(SelectionKey selectionKey, UdpNetworkEntry entry) {
         DatagramChannel channel = (DatagramChannel) entry.getChannel();
         if (selectionKey.isReadable()) {
-            try {
-                buffer.clear();
+            udpReadReady(channel, entry);
+        }
+        if (selectionKey.isWritable()) {
+            udpWriteReady(channel, entry);
+        }
+    }
+
+    private void udpReadReady(DatagramChannel channel, UdpNetworkEntry entry) {
+        try {
+            buffer.clear();
+
+            // Would directly call DatagramChannel.getLocalAddress(), but this doesn't look to be available on android. Doing this
+            // on Java 7/8 performs the same function -- it probably does the same on Android as well?
+            InetSocketAddress localAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
+            InetSocketAddress remoteAddress = (InetSocketAddress) channel.receive(buffer);
+
+            LOG.debug("{} UDP read {} bytes from {} to {}", entry, buffer.position(), remoteAddress, localAddress);
+
+            if (remoteAddress != null) {
+                buffer.flip();
+                byte[] bufferAsArray = InternalUtils.copyContentsToArray(buffer);
+                queueOutgoingMessage(entry, new UdpReadNotification(localAddress, remoteAddress, bufferAsArray));
+            }
+        } catch (IOException ioe) {
+            queueOutgoingMessage(entry, new ErrorNotification());
+            LOG.error("Exception encountered: {}", entry, ioe);
+        }
+    }   
+
+    private void udpWriteReady(DatagramChannel channel, UdpNetworkEntry entry) {
+        try {
+            LinkedList<AddressedByteBuffer> outBuffers = entry.getOutgoingBuffers();
+            if (!outBuffers.isEmpty()) {
+                // if not empty
+                AddressedByteBuffer outBuffer = outBuffers.removeFirst();
+
+                ByteBuffer outgoingBuffer = outBuffer.getBuffer();
 
                 // Would directly call DatagramChannel.getLocalAddress(), but this doesn't look to be available on android. Doing this
                 // on Java 7/8 performs the same function -- it probably does the same on Android as well?
                 InetSocketAddress localAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
-                InetSocketAddress remoteAddress = (InetSocketAddress) channel.receive(buffer);
+                InetSocketAddress remoteAddress = outBuffer.getSocketAddress();
+                int totalCount = outgoingBuffer.remaining();
 
-                LOG.debug("{} UDP read {} bytes from {} to {}", entry, buffer.position(), remoteAddress, localAddress);
+                int writeCount = channel.send(outgoingBuffer, remoteAddress);
 
-                if (remoteAddress != null) {
-                    buffer.flip();
-                    byte[] bufferAsArray = InternalUtils.copyContentsToArray(buffer);
-                    queueOutgoingMessage(entry, new UdpReadNotification(localAddress, remoteAddress, bufferAsArray));
-                }
-            } catch (IOException ioe) {
-                queueOutgoingMessage(entry, new ErrorNotification());
-                LOG.error("Exception encountered: {}", entry, ioe);
+                LOG.debug("{} UDP wrote {} bytes of {} from {} to {}", entry, writeCount, totalCount, localAddress, remoteAddress);
+
+                queueOutgoingMessage(entry, new UdpWriteResponse(writeCount));
+            } else if (!entry.isNotifiedOfWritable()) {
+                LOG.debug("{} UDP write empty", entry);
+
+                // if empty but not notified yet
+                entry.setNotifiedOfWritable(true);
+                queueOutgoingMessage(entry, new UdpWriteEmptyNotification());
             }
-        }
-        if (selectionKey.isWritable()) {
-            try {
-                LinkedList<AddressedByteBuffer> outBuffers = entry.getOutgoingBuffers();
-                if (!outBuffers.isEmpty()) {
-                    // if not empty
-                    AddressedByteBuffer outBuffer = outBuffers.removeFirst();
-
-                    ByteBuffer outgoingBuffer = outBuffer.getBuffer();
-                    
-                    // Would directly call DatagramChannel.getLocalAddress(), but this doesn't look to be available on android. Doing this
-                    // on Java 7/8 performs the same function -- it probably does the same on Android as well?
-                    InetSocketAddress localAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
-                    InetSocketAddress remoteAddress = outBuffer.getSocketAddress();
-                    int totalCount = outgoingBuffer.remaining();
-
-                    int writeCount = channel.send(outgoingBuffer, remoteAddress);
-
-                    LOG.debug("{} UDP wrote {} bytes of {} from {} to {}", entry, writeCount, totalCount, localAddress, remoteAddress);
-
-                    queueOutgoingMessage(entry, new UdpWriteResponse(writeCount));
-                } else if (!entry.isNotifiedOfWritable()) {
-                    LOG.debug("{} UDP write empty", entry);
-
-                    // if empty but not notified yet
-                    entry.setNotifiedOfWritable(true);
-                    queueOutgoingMessage(entry, new UdpWriteEmptyNotification());
-                }
-            } catch (IOException ioe) {
-                queueOutgoingMessage(entry, new ErrorNotification());
-                LOG.error("Exception encountered: {}", entry, ioe);
-            }
+        } catch (IOException ioe) {
+            queueOutgoingMessage(entry, new ErrorNotification());
+            LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
 
@@ -339,7 +372,7 @@ final class NetworkRunnable implements Runnable {
             channel.register(selector, newKey); // register new key if different -- calling register may have performance issues?
         }
     }
-
+    
     private void processMessage(Message envelope) throws IOException {
         LOG.debug("Processing message: {}", envelope);
 
@@ -347,148 +380,204 @@ final class NetworkRunnable implements Runnable {
         Address proxySuffix = envelope.getSourceAddress().removePrefix(proxyPrefix);
         Address selfSuffix = envelope.getDestinationAddress().removePrefix(selfPrefix);
         
-        if (msg instanceof UdpCreateRequest) {
-            UdpCreateRequest req = (UdpCreateRequest) msg;
+        NetworkEntry<?> networkEntry = idMap.get(selfSuffix);
+        if (networkEntry != null) {
+            Address expectedProxySuffix = networkEntry.getProxySuffix();
+            Address expectedSelfSuffix = networkEntry.getSelfSuffix();
             
-            DatagramChannel channel = null;
-            UdpNetworkEntry entry = null;
-            try {
-                channel = DatagramChannel.open();
-                channel.configureBlocking(false);
-                
-                // Would directly call DatagramChannel.bind(), but this doesn't look to be available on android. Doing this on Java 7/8
-                // performs the same function -- it probably does the same on Android as well?
-                channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), 0));
-                
-                entry = new UdpNetworkEntry(selfSuffix, proxySuffix, channel);
-                updateSelectionKey(entry, channel);
-                
-                idMap.put(selfSuffix, entry);
-                channelMap.put(channel, entry);
-                
-                queueOutgoingMessage(entry, new UdpCreateResponse());
-            } catch (RuntimeException re) {
-                if (channel != null) {
-                    IOUtils.closeQuietly(channel);
-                }
-
-                if (entry != null) {
-                    idMap.remove(entry.getSelfSuffix());
-                    channelMap.remove(entry.getChannel());
-                }
-
-                queueOutgoingMessage(entry, new ErrorResponse());
-                LOG.error("Unable to create socket: {}", entry, re);
-            }
-        } else if (msg instanceof TcpCreateRequest) {
-            TcpCreateRequest req = (TcpCreateRequest) msg;
-            
-            SocketChannel channel = null;
-            TcpNetworkEntry entry = null;
-            try {
-                channel = SocketChannel.open();
-                channel.configureBlocking(false);
-                // Would directly call SocketChannel.bind(), but this doesn't look to be available on android. Doing this on Java 7/8
-                // performs the same function -- it probably does the same on Android as well?
-                channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), 0));
-                InetSocketAddress dst = new InetSocketAddress(req.getDestinationAddress(), req.getDestinationPort());
-                channel.connect(dst);
-                
-                entry = new TcpNetworkEntry(selfSuffix, proxySuffix, channel);
-                entry.setConnecting(true);
-                updateSelectionKey(entry, channel);
-                
-                idMap.put(selfSuffix, entry);
-                channelMap.put(channel, entry);
-
-                queueOutgoingMessage(entry, new TcpCreateResponse());
-            } catch (RuntimeException re) {
-                if (channel != null) {
-                    IOUtils.closeQuietly(channel);
-                }
-
-                if (entry != null) {
-                    idMap.remove(entry.getSelfSuffix());
-                    channelMap.remove(entry.getChannel());
-                }
-                
-                queueOutgoingMessage(entry, new ErrorResponse());
-                LOG.error("Unable to create socket: {}", entry, re);
-            }
-        } else if (msg instanceof CloseRequest) {
-            CloseRequest req = (CloseRequest) msg;
-
-            NetworkEntry<?> entry = idMap.get(selfSuffix);
-            if (entry != null) {
-                Channel channel = entry.getChannel();
-                
-                idMap.remove(selfSuffix);
-                channelMap.remove(channel);
-                
-                IOUtils.closeQuietly(channel);
-                queueOutgoingMessage(entry, new CloseResponse());
-            }
-        } else if (msg instanceof TcpWriteRequest) {
-            TcpWriteRequest req = (TcpWriteRequest) msg;
-            TcpNetworkEntry entry = null;
-            try {
-                entry = (TcpNetworkEntry) idMap.get(selfSuffix);
-                if (entry != null) {
-                    LinkedList<ByteBuffer> outBuffers = entry.getOutgoingBuffers();
-                    ByteBuffer writeBuffer = ByteBuffer.wrap(req.getData());
-                    if (writeBuffer.hasRemaining()) {
-                        // only add if it has content -- adding empty is worthless because this is a stream
-                        outBuffers.add(writeBuffer);
-                    }
-                    AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
-                    updateSelectionKey(entry, channel);
-                }
-            } catch (RuntimeException re) {
-                if (entry != null) {
-                    queueOutgoingMessage(entry, new ErrorResponse());
-                }
-                LOG.error("Unable to process message: {}", entry, re);
-            }
-        } else if (msg instanceof UdpWriteRequest) {
-            UdpWriteRequest req = (UdpWriteRequest) msg;
-            UdpNetworkEntry entry = null;
-            try {
-                entry = (UdpNetworkEntry) idMap.get(selfSuffix);
-                if (entry != null) {
-                    LinkedList<AddressedByteBuffer> outBuffers = entry.getOutgoingBuffers();
-                    ByteBuffer writeBuffer = ByteBuffer.wrap(req.getData());
-                    InetSocketAddress writeAddress = req.getRemoteAddress();
-                    outBuffers.add(new AddressedByteBuffer(writeBuffer, writeAddress));
-                    AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
-                    updateSelectionKey(entry, channel);
-                }
-            } catch (RuntimeException re) {
-                if (entry != null) {
-                    queueOutgoingMessage(entry, new ErrorResponse());
-                }
-                LOG.error("Unable to process message: {}", entry, re);
-            }
-        } else if (msg instanceof GetLocalIpAddressesRequest) {
-            GetLocalIpAddressesRequest req = (GetLocalIpAddressesRequest) msg;
-            Set<InetAddress> ret = new HashSet<>();
-            try {
-                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                while (interfaces.hasMoreElements()) {
-                    NetworkInterface networkInterface = interfaces.nextElement();
-                    Enumeration<InetAddress> addrs = networkInterface.getInetAddresses();
-                    while (addrs.hasMoreElements()) {
-                        InetAddress addr = addrs.nextElement();
-                        if (!addr.isLoopbackAddress()) {
-                            ret.add(addr);
-                        }
-                    }
-                }
-                queueOutgoingMessage(envelope, new GetLocalIpAddressesResponse(ret));
-            } catch (RuntimeException re) {
-                LOG.error("Unable to process message", re);
+            if (!expectedSelfSuffix.equals(selfSuffix) || !expectedProxySuffix.equals(proxySuffix)) {
                 queueOutgoingMessage(envelope, new ErrorResponse());
+                LOG.error("Address suffixes don't match: {} vs {} and {} vs {}", expectedSelfSuffix, proxySuffix,
+                        expectedSelfSuffix, selfSuffix);
+                return;
             }
         }
+        
+        Processor processor = processors.get(msg.getClass());
+        if (processor == null) {
+            LOG.error("Unrecognized message: {}", msg);
+            return;
+        }
+        
+        processor.process(msg, proxySuffix, selfSuffix, networkEntry);
+    }
+    
+    private void processUdpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+            throws IOException { 
+        UdpCreateRequest req = (UdpCreateRequest) msg;
+        if (networkEntry != null) {
+            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            LOG.error("Socket already exists: {}", networkEntry);
+            return;
+        }
+
+        DatagramChannel channel = null;
+        UdpNetworkEntry entry = null;
+        try {
+            channel = DatagramChannel.open();
+            channel.configureBlocking(false);
+
+            // Would directly call DatagramChannel.bind(), but this doesn't look to be available on android. Doing this on Java 7/8
+            // performs the same function -- it probably does the same on Android as well?
+            channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), 0));
+
+            entry = new UdpNetworkEntry(selfSuffix, proxySuffix, channel);
+            updateSelectionKey(entry, channel);
+
+            idMap.put(selfSuffix, entry);
+            channelMap.put(channel, entry);
+
+            queueOutgoingMessage(entry, new UdpCreateResponse());
+        } catch (RuntimeException re) {
+            if (channel != null) {
+                IOUtils.closeQuietly(channel);
+            }
+
+            if (entry != null) {
+                idMap.remove(entry.getSelfSuffix());
+                channelMap.remove(entry.getChannel());
+            }
+
+            queueOutgoingMessage(entry, new ErrorResponse());
+            LOG.error("Unable to create socket: {}", entry, re);
+        }
+    }
+
+    private void processTcpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+            throws IOException {
+        TcpCreateRequest req = (TcpCreateRequest) msg;
+        if (networkEntry != null) {
+            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            LOG.error("Socket already exists: {}", networkEntry);
+            return;
+        }
+
+        SocketChannel channel = null;
+        TcpNetworkEntry entry = null;
+        try {
+            channel = SocketChannel.open();
+            channel.configureBlocking(false);
+            // Would directly call SocketChannel.bind(), but this doesn't look to be available on android. Doing this on Java 7/8
+            // performs the same function -- it probably does the same on Android as well?
+            channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), 0));
+            InetSocketAddress dst = new InetSocketAddress(req.getDestinationAddress(), req.getDestinationPort());
+            channel.connect(dst);
+
+            entry = new TcpNetworkEntry(selfSuffix, proxySuffix, channel);
+            entry.setConnecting(true);
+            updateSelectionKey(entry, channel);
+
+            idMap.put(selfSuffix, entry);
+            channelMap.put(channel, entry);
+
+            queueOutgoingMessage(entry, new TcpCreateResponse());
+        } catch (RuntimeException re) {
+            if (channel != null) {
+                IOUtils.closeQuietly(channel);
+            }
+
+            if (entry != null) {
+                idMap.remove(entry.getSelfSuffix());
+                channelMap.remove(entry.getChannel());
+            }
+
+            queueOutgoingMessage(entry, new ErrorResponse());
+            LOG.error("Unable to create socket: {}", entry, re);
+        }
+    }
+    
+    private void processLocalIpAddressesRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+            throws IOException {
+//      LocalIpAddressesRequest req = (LocalIpAddressesRequest) msg;
+        Set<InetAddress> ret = new HashSet<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                Enumeration<InetAddress> addrs = networkInterface.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    InetAddress addr = addrs.nextElement();
+                    if (!addr.isLoopbackAddress()) {
+                        ret.add(addr);
+                    }
+                }
+            }
+            queueOutgoingMessage(selfSuffix, proxySuffix, new LocalIpAddressesResponse(ret));
+        } catch (RuntimeException re) {
+            LOG.error("Unable to process message", re);
+            queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
+        }
+    }
+    
+    private void processTcpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+            throws IOException {
+        TcpWriteRequest req = (TcpWriteRequest) msg;
+        if (networkEntry == null) {
+            queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
+            LOG.error("Socket does not exist: {}", networkEntry);
+            return;
+        }
+        
+        try {
+            TcpNetworkEntry entry = (TcpNetworkEntry) networkEntry;
+
+            LinkedList<ByteBuffer> outBuffers = entry.getOutgoingBuffers();
+            ByteBuffer writeBuffer = ByteBuffer.wrap(req.getData());
+            if (writeBuffer.hasRemaining()) {
+                // only add if it has content -- adding empty is worthless because this is a stream
+                outBuffers.add(writeBuffer);
+            }
+            AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
+            updateSelectionKey(entry, channel);
+        } catch (RuntimeException re) {
+            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            LOG.error("Unable to process message: {}", networkEntry, re);
+        }
+    }
+    
+    private void processUdpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+            throws IOException {
+        UdpWriteRequest req = (UdpWriteRequest) msg;
+        if (networkEntry == null) {
+            queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
+            LOG.error("Socket does not exist: {}", networkEntry);
+            return;
+        }
+
+        try {
+            UdpNetworkEntry entry = (UdpNetworkEntry) networkEntry;
+
+            LinkedList<AddressedByteBuffer> outBuffers = entry.getOutgoingBuffers();
+            ByteBuffer writeBuffer = ByteBuffer.wrap(req.getData());
+            InetSocketAddress writeAddress = req.getRemoteAddress();
+            outBuffers.add(new AddressedByteBuffer(writeBuffer, writeAddress));
+            AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
+            updateSelectionKey(entry, channel);
+        } catch (RuntimeException re) {
+            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            LOG.error("Unable to process message: {}", networkEntry, re);
+        }
+    }
+    
+    private void processCloseRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+            throws IOException {
+        if (networkEntry == null) {
+            queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
+            LOG.error("Socket does not exist: {}", networkEntry);
+            return;
+        }
+        
+        Channel channel = networkEntry.getChannel();
+        IOUtils.closeQuietly(channel);
+        
+        idMap.remove(selfSuffix);
+        channelMap.remove(channel);
+
+        queueOutgoingMessage(networkEntry, new CloseResponse());
+    }
+    
+    private interface Processor {
+        void process(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry) throws IOException;
     }
 
     private void queueOutgoingMessage(Message requestEnvelope, Object msg) {
@@ -501,6 +590,13 @@ final class NetworkRunnable implements Runnable {
     private void queueOutgoingMessage(NetworkEntry<?> entry, Object msg) {
         Address selfAddress = selfPrefix.appendSuffix(entry.getSelfSuffix());
         Address proxyAddress = proxyPrefix.appendSuffix(entry.getProxySuffix());
+        Message envelope = new Message(selfAddress, proxyAddress, msg);
+        localOutQueue.add(envelope);
+    }
+
+    private void queueOutgoingMessage(Address selfSuffix, Address proxySuffix, Object msg) {
+        Address selfAddress = selfPrefix.appendSuffix(selfSuffix);
+        Address proxyAddress = proxyPrefix.appendSuffix(proxySuffix);
         Message envelope = new Message(selfAddress, proxyAddress, msg);
         localOutQueue.add(envelope);
     }
