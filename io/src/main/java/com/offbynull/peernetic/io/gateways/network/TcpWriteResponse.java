@@ -14,16 +14,37 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
+
+import org.apache.commons.lang3.Validate;
 
 /**
- * Closed a TCP socket. Successful response to {@link TcpCloseRequest}.
+ * Sent data through a TCP socket. Successful response to {@link TcpWriteRequest}.
  * @author Kasra Faghihi
  */
-public final class CloseResponse {
+public final class TcpWriteResponse {
+    private int amountWritten;
+
+    /**
+     * Constructs a {@link TcpWriteResponse} object.
+     * @param amountWritten amount of data written out (in bytes)
+     */
+    public TcpWriteResponse(int amountWritten) {
+        Validate.inclusiveBetween(0, Integer.MAX_VALUE, amountWritten);
+        this.amountWritten = amountWritten;
+    }
+
+    /**
+     * Amount of data written out.
+     * @return bytes written out
+     */
+    public int getAmountWritten() {
+        return amountWritten;
+    }
 
     @Override
     public String toString() {
-        return "CloseResponse{" + '}';
+        return "TcpWriteResponse{amountWritten=" + amountWritten + '}';
     }
+    
 }

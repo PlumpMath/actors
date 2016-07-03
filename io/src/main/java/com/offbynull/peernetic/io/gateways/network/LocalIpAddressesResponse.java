@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
 import java.net.InetAddress;
 import java.util.HashSet;

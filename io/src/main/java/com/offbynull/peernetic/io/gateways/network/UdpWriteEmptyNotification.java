@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Close a socket. Possible responses are {@link CloseResponse} and {@link ErrorResponse}.
+ * Write buffer for UDP socket is empty.
  * @author Kasra Faghihi
  */
-public final class CloseRequest {
+public final class UdpWriteEmptyNotification {
 
     @Override
     public String toString() {
-        return "CloseRequest{" + '}';
+        return "UdpWriteEmptyNotification{" + '}';
     }
 }

@@ -14,44 +14,29 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
-import org.apache.commons.lang3.Validate;
 
 /**
- * Send packet to a UDP socket. Possible responses are {@link UdpWriteResponse} and {@link ErrorResponse}).
+ * TCP socket has received data.
  * @author Kasra Faghihi
  */
-public final class UdpWriteRequest {
-    private InetSocketAddress remoteAddress;
+public final class TcpReadNotification {
     private byte[] data;
 
     /**
-     * Constructs a {@link WriteUdpNetworkRequest} object.
-     * @param remoteAddress outgoing socket address
-     * @param data send data
+     * Constructs a {@link TcpReadNotification} object.
+     * @param data received data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public UdpWriteRequest(InetSocketAddress remoteAddress, byte[] data) {
-        Validate.notNull(remoteAddress);
-        Validate.notNull(data);
-        this.remoteAddress = remoteAddress;
+    public TcpReadNotification(byte[] data) {
         this.data = Arrays.copyOf(data, data.length);
     }
 
     /**
-     * Get remote address.
-     * @return remote address
-     */
-    public InetSocketAddress getRemoteAddress() {
-        return remoteAddress;
-    }
-
-    /**
-     * Get send packet.
-     * @return send packet
+     * Get data.
+     * @return data
      */
     public byte[] getData() {
         return Arrays.copyOf(data, data.length);
@@ -59,8 +44,7 @@ public final class UdpWriteRequest {
 
     @Override
     public String toString() {
-        return "UdpWriteRequest{remoteAddress=" + remoteAddress + ", data=" + Arrays.toString(data)
-                + '}';
+        return "TcpReadNotification{data=" + Arrays.toString(data) + '}';
     }
 
 }

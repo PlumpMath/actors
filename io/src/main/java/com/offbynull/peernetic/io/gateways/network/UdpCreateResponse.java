@@ -14,16 +14,17 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Connected a TCP socket. Occurs shortly after a TCP socket has been created.
+ * Created a UDP socket. Successful response to {@link UdpCreateRequest}.
  * @author Kasra Faghihi
  */
-public final class TcpConnectedNotification {
+public final class UdpCreateResponse {
 
     @Override
     public String toString() {
-        return "TcpConnectedNotification{" + '}';
+        return "UdpCreateResponse{" + '}';
     }
+
 }

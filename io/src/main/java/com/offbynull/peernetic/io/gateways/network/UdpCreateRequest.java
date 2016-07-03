@@ -14,37 +14,38 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
-import java.util.Arrays;
+import java.net.InetAddress;
+import org.apache.commons.lang3.Validate;
 
 /**
- * TCP socket has received data.
+ * Create a UDP socket. Possible responses are {@link UdpCreateResponse} and {@link ErrorResponse}).
  * @author Kasra Faghihi
  */
-public final class TcpReadNotification {
-    private byte[] data;
+public final class UdpCreateRequest {
+    private InetAddress sourceAddress;
 
     /**
-     * Constructs a {@link TcpReadNotification} object.
-     * @param data received data
+     * Constructs a {@link UdpCreateRequest} object.
+     * @param sourceAddress source address of the socket to be created
      * @throws NullPointerException if any argument is {@code null}
      */
-    public TcpReadNotification(byte[] data) {
-        this.data = Arrays.copyOf(data, data.length);
+    public UdpCreateRequest(InetAddress sourceAddress) {
+        Validate.notNull(sourceAddress);
+        this.sourceAddress = sourceAddress;
     }
 
     /**
-     * Get data.
-     * @return data
+     * Source address of the socket to be created.
+     * @return source address
      */
-    public byte[] getData() {
-        return Arrays.copyOf(data, data.length);
+    public InetAddress getSourceAddress() {
+        return sourceAddress;
     }
 
     @Override
     public String toString() {
-        return "TcpReadNotification{data=" + Arrays.toString(data) + '}';
+        return "UdpCreateRequest{" + "sourceAddress=" + sourceAddress + '}';
     }
-
 }

@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
 import org.apache.commons.lang3.Validate;
 
 /**
- * Sent data through a TCP socket. Successful response to {@link TcpWriteRequest}.
+ * Sent packet through a UDP socket. Successful response to {@link UdpWriteRequest}.
  * @author Kasra Faghihi
  */
-public final class TcpWriteResponse {
+public final class UdpWriteResponse {
     private int amountWritten;
 
     /**
-     * Constructs a {@link TcpWriteResponse} object.
-     * @param amountWritten amount of data written out (in bytes)
+     * Constructs a {@link UdpWriteResponse} object.
+     * @param amountWritten amount of data written out in packet (in bytes)
      */
-    public TcpWriteResponse(int amountWritten) {
+    public UdpWriteResponse(int amountWritten) {
         Validate.inclusiveBetween(0, Integer.MAX_VALUE, amountWritten);
         this.amountWritten = amountWritten;
     }
 
     /**
-     * Amount of data written out.
+     * Amount of data written out .
      * @return bytes written out
      */
     public int getAmountWritten() {
@@ -44,7 +44,7 @@ public final class TcpWriteResponse {
 
     @Override
     public String toString() {
-        return "TcpWriteResponse{amountWritten=" + amountWritten + '}';
+        return "UdpWriteResponse{amountWritten=" + amountWritten + '}';
     }
     
 }

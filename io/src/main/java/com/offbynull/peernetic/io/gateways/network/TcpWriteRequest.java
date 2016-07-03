@@ -14,38 +14,39 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
-import java.net.InetAddress;
+import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Create a UDP socket. Possible responses are {@link UdpCreateResponse} and {@link ErrorResponse}).
+ * Send data to a TCP socket. Possible responses are {@link TcpWriteResponse} and {@link ErrorResponse}).
  * @author Kasra Faghihi
  */
-public final class UdpCreateRequest {
-    private InetAddress sourceAddress;
+public final class TcpWriteRequest {
+    private byte[] data;
 
     /**
-     * Constructs a {@link UdpCreateRequest} object.
-     * @param sourceAddress source address of the socket to be created
+     * Constructs a {@link TcpWriteRequest} object.
+     * @param data send data
      * @throws NullPointerException if any argument is {@code null}
      */
-    public UdpCreateRequest(InetAddress sourceAddress) {
-        Validate.notNull(sourceAddress);
-        this.sourceAddress = sourceAddress;
+    public TcpWriteRequest(byte[] data) {
+        Validate.notNull(data);
+        this.data = Arrays.copyOf(data, data.length);
     }
 
     /**
-     * Source address of the socket to be created.
-     * @return source address
+     * Get send data.
+     * @return send data
      */
-    public InetAddress getSourceAddress() {
-        return sourceAddress;
+    public byte[] getData() {
+        return Arrays.copyOf(data, data.length);
     }
 
     @Override
     public String toString() {
-        return "UdpCreateRequest{" + "sourceAddress=" + sourceAddress + '}';
+        return "TcpWriteRequest{data=" + Arrays.toString(data) + '}';
     }
+
 }

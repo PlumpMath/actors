@@ -14,17 +14,18 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Write buffer for TCP socket is empty.
+ * Error notification associated with a socket.  Does not mean that the socket associated with this ID is dead (no longer usable) -- you
+ * should still close the socket.
  * @author Kasra Faghihi
  */
-public final class TcpWriteEmptyNotification {
+public final class ErrorNotification {
 
     @Override
     public String toString() {
-        return "TcpWriteEmptyNotification{" + '}';
+        return "ErrorNotification{" + '}';
     }
 
 }

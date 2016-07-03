@@ -14,8 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
+package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Internal messages for network IO gateway.
+ * Connected a TCP socket. Occurs shortly after a TCP socket has been created.
+ * @author Kasra Faghihi
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+public final class TcpConnectedNotification {
+
+    @Override
+    public String toString() {
+        return "TcpConnectedNotification{" + '}';
+    }
+}

@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.io.gateways.network.messages;
+package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Created a TCP socket. Successful response to {@link TcpCreateRequest}.
+ * Closed a TCP socket. Successful response to {@link TcpCloseRequest}.
  * @author Kasra Faghihi
  */
-public final class TcpCreateResponse {
+public final class CloseResponse {
 
     @Override
     public String toString() {
-        return "TcpCreateResponse{" + '}';
+        return "CloseResponse{" + '}';
     }
 }
