@@ -16,14 +16,12 @@
  */
 package com.offbynull.peernetic.io.gateways.network;
 
-/**
- * Created a TCP socket and connected. Successful response to {@link TcpCreateRequest}.
- * @author Kasra Faghihi
- */
-public final class TcpCreateResponse {
+import com.offbynull.peernetic.core.shuttle.Address;
+import java.nio.channels.Channel;
 
-    @Override
-    public String toString() {
-        return "TcpCreateResponse{" + '}';
+final class TcpServerNetworkEntry extends NetworkEntry {
+
+    TcpServerNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
+        super(selfSuffix, proxySuffix, channel);
     }
 }

@@ -17,13 +17,14 @@
 package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Connected a TCP socket. Occurs shortly after a TCP socket has been created.
+ * Created a TCP server socket. Successful response to {@link TcpServerCreateRequest}.
  * @author Kasra Faghihi
  */
-public final class TcpConnectedNotification {
+public final class TcpServerCreateResponse {
 
     @Override
     public String toString() {
-        return "TcpConnectedNotification{" + '}';
+        return "TcpServerCreateResponse{" + '}';
     }
+
 }

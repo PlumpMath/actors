@@ -20,6 +20,7 @@ import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.core.shuttle.Message;
 import com.offbynull.peernetic.core.shuttle.Shuttle;
 import com.offbynull.peernetic.core.shuttles.simple.Bus;
+import static com.offbynull.peernetic.io.gateways.network.InternalUtils.socketAddressToHexString;
 import com.offbynull.peernetic.io.gateways.network.UdpNetworkEntry.AddressedByteBuffer;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -31,6 +32,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Enumeration;
@@ -60,8 +62,8 @@ final class NetworkRunnable implements Runnable {
     private final Selector selector;
     
     // intended only for use by thread -- no outside access
-    private final Map<Address, NetworkEntry<?>> idMap; // get by self suffix
-    private final Map<Channel, NetworkEntry<?>> channelMap;
+    private final Map<Address, NetworkEntry> idMap; // get by self suffix
+    private final Map<Channel, NetworkEntry> channelMap;
     private final ByteBuffer buffer;
     private LinkedList<Message> localOutQueue;
     
@@ -133,7 +135,7 @@ final class NetworkRunnable implements Runnable {
                         continue;
                     }
                     Channel channel = (Channel) key.channel();
-                    NetworkEntry<?> entry = channelMap.get(channel);
+                    NetworkEntry entry = channelMap.get(channel);
                     if (entry == null) {
                         channel.close();
                         continue;
@@ -143,6 +145,8 @@ final class NetworkRunnable implements Runnable {
                             handleSelectForTcpChannel(key, (TcpNetworkEntry) entry);
                         } else if (channel instanceof DatagramChannel) {
                             handleSelectForUdpChannel(key, (UdpNetworkEntry) entry);
+                        } else if (channel instanceof ServerSocketChannel) {
+                            handleSelectForTcpServerChannel(key, (TcpServerNetworkEntry) entry);
                         } else {
                             throw new IllegalStateException(); // should never happen
                         }
@@ -193,12 +197,16 @@ final class NetworkRunnable implements Runnable {
             // see if we're already connected before sending the CreateTcpSocketNetworkResponse msg
             boolean alreadyConnected = channel.isConnected();
             boolean connected = channel.finishConnect();
-            if (!alreadyConnected && connected) {
-                entry.setConnecting(false);
-                queueOutgoingMessage(entry, new TcpConnectedNotification());
+            if (!alreadyConnected) {
+                if (connected) {
+                    entry.setConnecting(false);
+                    queueOutgoingMessage(entry, new TcpCreateResponse());
+                } else {
+                    queueOutgoingMessage(entry, new ErrorResponse());
+                }
             }
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorNotification());
+            queueOutgoingMessage(entry, new ErrorResponse());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
@@ -322,7 +330,46 @@ final class NetworkRunnable implements Runnable {
         }
     }
 
-    private void updateSelectionKey(NetworkEntry<?> entry, AbstractSelectableChannel channel) throws ClosedChannelException {
+    private void handleSelectForTcpServerChannel(SelectionKey selectionKey, TcpServerNetworkEntry entry) {
+        ServerSocketChannel channel = (ServerSocketChannel) entry.getChannel();
+        if (selectionKey.isAcceptable()) {
+            tcpServerAcceptReady(channel, entry);
+        }
+    }
+
+    private void tcpServerAcceptReady(ServerSocketChannel channel, TcpServerNetworkEntry entry) {
+        LOG.debug("{} TCP accept", entry);
+        try {
+            SocketChannel socketChannel = channel.accept();
+            socketChannel.configureBlocking(false);
+
+            
+            Address selfSuffix = entry.getSelfSuffix().appendSuffix(socketAddressToHexString(socketChannel));
+            Address proxySuffix = entry.getProxySuffix().appendSuffix(socketAddressToHexString(socketChannel));
+            TcpNetworkEntry tcpEntry = new TcpNetworkEntry(selfSuffix, proxySuffix, channel);
+            tcpEntry.setConnecting(false);
+
+            idMap.put(selfSuffix, entry);
+            channelMap.put(channel, entry);
+            
+            updateSelectionKey(tcpEntry, channel);
+            
+            queueOutgoingMessage(
+                    entry,
+                    new TcpServerAcceptNotification(
+                            ((InetSocketAddress) socketChannel.getLocalAddress()).getAddress(),
+                            ((InetSocketAddress) socketChannel.getLocalAddress()).getPort(),
+                            ((InetSocketAddress) socketChannel.getRemoteAddress()).getAddress(),
+                            ((InetSocketAddress) socketChannel.getRemoteAddress()).getPort(),
+                            selfPrefix.appendSuffix(selfSuffix),
+                            proxyPrefix.appendSuffix(proxySuffix)));
+        } catch (IOException ioe) {
+            queueOutgoingMessage(entry, new ErrorResponse());
+            LOG.error("Exception encountered: {}", entry, ioe);
+        }
+    }
+
+    private void updateSelectionKey(NetworkEntry entry, AbstractSelectableChannel channel) throws ClosedChannelException {
         int newKey = 0;
         if (entry instanceof TcpNetworkEntry) {
             TcpNetworkEntry tcpNetworkEntry = (TcpNetworkEntry) entry;
@@ -334,18 +381,31 @@ final class NetworkRunnable implements Runnable {
             if (!tcpNetworkEntry.isReadFinished()) {
                 newKey |= SelectionKey.OP_READ;
             }
+            
+            if (!tcpNetworkEntry.getOutgoingBuffers().isEmpty()) {
+                // if not empty
+                newKey |= SelectionKey.OP_WRITE;
+                tcpNetworkEntry.setNotifiedOfWritable(false);
+            } else if (!tcpNetworkEntry.isNotifiedOfWritable()) {
+                // if is empty but not notified yet
+                newKey |= SelectionKey.OP_WRITE;
+            }
         } else if (entry instanceof UdpNetworkEntry) {
+            UdpNetworkEntry udpNetworkEntry = (UdpNetworkEntry) entry;
             newKey |= SelectionKey.OP_READ;
+            
+            if (!udpNetworkEntry.getOutgoingBuffers().isEmpty()) {
+                // if not empty
+                newKey |= SelectionKey.OP_WRITE;
+                udpNetworkEntry.setNotifiedOfWritable(false);
+            } else if (!udpNetworkEntry.isNotifiedOfWritable()) {
+                // if is empty but not notified yet
+                newKey |= SelectionKey.OP_WRITE;
+            }
+        } else if (entry instanceof TcpServerNetworkEntry) {
+            newKey |= SelectionKey.OP_ACCEPT;
         }
         
-        if (!entry.getOutgoingBuffers().isEmpty()) {
-            // if not empty
-            newKey |= SelectionKey.OP_WRITE;
-            entry.setNotifiedOfWritable(false);
-        } else if (!entry.isNotifiedOfWritable()) {
-            // if is empty but not notified yet
-            newKey |= SelectionKey.OP_WRITE;
-        }
         if (newKey != entry.getSelectionKey()) {
             entry.setSelectionKey(newKey);
             LOG.debug("{} Key updated to {}", entry, newKey);
@@ -360,7 +420,7 @@ final class NetworkRunnable implements Runnable {
         Address proxySuffix = envelope.getSourceAddress().removePrefix(proxyPrefix);
         Address selfSuffix = envelope.getDestinationAddress().removePrefix(selfPrefix);
         
-        NetworkEntry<?> networkEntry = idMap.get(selfSuffix);
+        NetworkEntry networkEntry = idMap.get(selfSuffix);
         if (networkEntry != null) {
             Address expectedProxySuffix = networkEntry.getProxySuffix();
             Address expectedSelfSuffix = networkEntry.getSelfSuffix();
@@ -382,7 +442,7 @@ final class NetworkRunnable implements Runnable {
         processor.process(msg, proxySuffix, selfSuffix, networkEntry);
     }
     
-    private void processUdpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+    private void processUdpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
             throws IOException { 
         UdpCreateRequest req = (UdpCreateRequest) msg;
         if (networkEntry != null) {
@@ -423,7 +483,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
 
-    private void processTcpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+    private void processTcpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
             throws IOException {
         TcpCreateRequest req = (TcpCreateRequest) msg;
         if (networkEntry != null) {
@@ -449,8 +509,46 @@ final class NetworkRunnable implements Runnable {
 
             idMap.put(selfSuffix, entry);
             channelMap.put(channel, entry);
+        } catch (RuntimeException re) {
+            if (channel != null) {
+                IOUtils.closeQuietly(channel);
+            }
 
-            queueOutgoingMessage(entry, new TcpCreateResponse());
+            if (entry != null) {
+                idMap.remove(entry.getSelfSuffix());
+                channelMap.remove(entry.getChannel());
+            }
+
+            queueOutgoingMessage(entry, new ErrorResponse());
+            LOG.error("Unable to create socket: {}", entry, re);
+        }
+    }
+
+    private void processTcpServerCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
+            throws IOException {
+        TcpServerCreateRequest req = (TcpServerCreateRequest) msg;
+        if (networkEntry != null) {
+            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            LOG.error("Socket already exists: {}", networkEntry);
+            return;
+        }
+
+        ServerSocketChannel channel = null;
+        TcpServerNetworkEntry entry = null;
+        try {
+            channel = ServerSocketChannel.open();
+            channel.configureBlocking(false);
+            // Would directly call SocketChannel.bind(), but this doesn't look to be available on android. Doing this on Java 7/8
+            // performs the same function -- it probably does the same on Android as well?
+            channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), req.getSourcePort()));
+
+            entry = new TcpServerNetworkEntry(selfSuffix, proxySuffix, channel);
+            updateSelectionKey(entry, channel);
+
+            idMap.put(selfSuffix, entry);
+            channelMap.put(channel, entry);
+
+            queueOutgoingMessage(entry, new TcpServerCreateResponse());
         } catch (RuntimeException re) {
             if (channel != null) {
                 IOUtils.closeQuietly(channel);
@@ -466,7 +564,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
     
-    private void processLocalIpAddressesRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+    private void processLocalIpAddressesRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
             throws IOException {
 //      LocalIpAddressesRequest req = (LocalIpAddressesRequest) msg;
         Set<InetAddress> ret = new HashSet<>();
@@ -489,7 +587,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
     
-    private void processTcpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+    private void processTcpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
             throws IOException {
         TcpWriteRequest req = (TcpWriteRequest) msg;
         if (networkEntry == null) {
@@ -515,7 +613,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
     
-    private void processUdpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+    private void processUdpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
             throws IOException {
         UdpWriteRequest req = (UdpWriteRequest) msg;
         if (networkEntry == null) {
@@ -539,7 +637,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
     
-    private void processCloseRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry)
+    private void processCloseRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
             throws IOException {
         if (networkEntry == null) {
             queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
@@ -557,7 +655,7 @@ final class NetworkRunnable implements Runnable {
     }
     
     private interface Processor {
-        void process(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry<?> networkEntry) throws IOException;
+        void process(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) throws IOException;
     }
 
     private void queueOutgoingMessage(Message requestEnvelope, Object msg) {
@@ -567,7 +665,7 @@ final class NetworkRunnable implements Runnable {
         localOutQueue.add(responseEnvelope);
     }
 
-    private void queueOutgoingMessage(NetworkEntry<?> entry, Object msg) {
+    private void queueOutgoingMessage(NetworkEntry entry, Object msg) {
         Address selfAddress = selfPrefix.appendSuffix(entry.getSelfSuffix());
         Address proxyAddress = proxyPrefix.appendSuffix(entry.getProxySuffix());
         Message envelope = new Message(selfAddress, proxyAddress, msg);
@@ -600,7 +698,7 @@ final class NetworkRunnable implements Runnable {
     }
 
     private void forcefullyShutdownResource(Address selfSuffix) {
-        NetworkEntry<?> ne = idMap.remove(selfSuffix);
+        NetworkEntry ne = idMap.remove(selfSuffix);
         
         LOG.debug("{} Attempting to shutdown", selfSuffix);
         

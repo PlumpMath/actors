@@ -23,17 +23,26 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.LinkedList;
 
-final class UdpNetworkEntry extends NetworkEntry<AddressedByteBuffer> {
+final class UdpNetworkEntry extends NetworkEntry {
     private LinkedList<AddressedByteBuffer> outgoingBuffers;
+    private boolean notifiedOfWritable;
 
     UdpNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
         super(selfSuffix, proxySuffix, channel);
         outgoingBuffers = new LinkedList<>();
+        notifiedOfWritable = false;
     }
 
-    @Override
     LinkedList<AddressedByteBuffer> getOutgoingBuffers() {
         return outgoingBuffers;
+    }
+
+    boolean isNotifiedOfWritable() {
+        return notifiedOfWritable;
+    }
+
+    void setNotifiedOfWritable(boolean notifiedOfWritable) {
+        this.notifiedOfWritable = notifiedOfWritable;
     }
     
     static final class AddressedByteBuffer  {

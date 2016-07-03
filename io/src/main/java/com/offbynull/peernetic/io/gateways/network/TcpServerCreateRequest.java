@@ -20,32 +20,27 @@ import java.net.InetAddress;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Create a TCP socket. Possible responses are {@link TcpCreateResponse} and {@link ErrorResponse}).
+ * Create a TCP server socket. Possible responses are {@link TcpServerCreateResponse} and {@link ErrorResponse}).
  * @author Kasra Faghihi
  */
-public final class TcpCreateRequest {
+public final class TcpServerCreateRequest {
 
     private InetAddress sourceAddress;
-    private InetAddress destinationAddress;
-    private int destinationPort;
+    private int sourcePort;
 
     /**
      * Constructs a {@link TcpCreateRequest} object.
-     * @param sourceAddress source address of the socket to be created
-     * @param destinationAddress destination address of the socket to be created
-     * @param destinationPort destination port of the socket to be created
+     * @param sourceAddress source address of the socket to be created (address listening for connections)
+     * @param sourcePort source port of the socket to be created (port listening for connections)
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code 1 > destinationPort > 65535}
      */
-    public TcpCreateRequest(InetAddress sourceAddress, InetAddress destinationAddress,
-            int destinationPort) {
+    public TcpServerCreateRequest(InetAddress sourceAddress, int sourcePort) {
         Validate.notNull(sourceAddress);
-        Validate.notNull(destinationAddress);
-        Validate.inclusiveBetween(1, 65535, destinationPort);
+        Validate.inclusiveBetween(1, 65535, sourcePort);
 
         this.sourceAddress = sourceAddress;
-        this.destinationAddress = destinationAddress;
-        this.destinationPort = destinationPort;
+        this.sourcePort = sourcePort;
     }
 
     /**
@@ -57,24 +52,16 @@ public final class TcpCreateRequest {
     }
 
     /**
-     * Destination address of the socket to be created.
-     * @return destination address
+     * Source port of the socket to be created.
+     * @return source port
      */
-    public InetAddress getDestinationAddress() {
-        return destinationAddress;
-    }
-
-    /**
-     * Destination port of the socket to be created.
-     * @return destination port
-     */
-    public int getDestinationPort() {
-        return destinationPort;
+    public int getSourcePort() {
+        return sourcePort;
     }
 
     @Override
     public String toString() {
-        return "TcpCreateRequest{" + ", sourceAddress=" + sourceAddress + ", destinationAddress="
-                + destinationAddress + ", destinationPort=" + destinationPort + '}';
+        return "TcpServerCreateRequest{" + "sourceAddress=" + sourceAddress + ", sourcePort=" + sourcePort + '}';
     }
+
 }

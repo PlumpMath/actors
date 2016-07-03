@@ -16,7 +16,12 @@
  */
 package com.offbynull.peernetic.io.gateways.network;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import java.util.Locale;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
 
 final class InternalUtils {
@@ -68,5 +73,12 @@ final class InternalUtils {
         }
         
         return dst;
+    }
+    
+    public static String socketAddressToHexString(SocketChannel socketChannel) throws IOException {
+        return (Hex.encodeHexString(((InetSocketAddress) socketChannel.getLocalAddress()).getAddress().getAddress())
+                + Integer.toString(((InetSocketAddress) socketChannel.getLocalAddress()).getPort(), 16)
+                + Hex.encodeHexString(((InetSocketAddress) socketChannel.getRemoteAddress()).getAddress().getAddress())
+                + Integer.toString(((InetSocketAddress) socketChannel.getRemoteAddress()).getPort(), 16)).toLowerCase(Locale.ENGLISH);
     }
 }

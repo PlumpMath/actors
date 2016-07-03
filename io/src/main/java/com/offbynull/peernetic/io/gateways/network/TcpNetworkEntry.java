@@ -21,17 +21,18 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.LinkedList;
 
-final class TcpNetworkEntry extends NetworkEntry<ByteBuffer> {
+final class TcpNetworkEntry extends NetworkEntry {
     private boolean connecting = true;
     private boolean readFinished;
     private LinkedList<ByteBuffer> outgoingBuffers;
+    private boolean notifiedOfWritable;
 
     TcpNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
         super(selfSuffix, proxySuffix, channel);
         outgoingBuffers = new LinkedList<>();
+        notifiedOfWritable = false;
     }
 
-    @Override
     public LinkedList<ByteBuffer> getOutgoingBuffers() {
         return outgoingBuffers;
     }
@@ -51,5 +52,12 @@ final class TcpNetworkEntry extends NetworkEntry<ByteBuffer> {
     public void setReadFinished(boolean readFinished) {
         this.readFinished = readFinished;
     }
-    
+
+    boolean isNotifiedOfWritable() {
+        return notifiedOfWritable;
+    }
+
+    void setNotifiedOfWritable(boolean notifiedOfWritable) {
+        this.notifiedOfWritable = notifiedOfWritable;
+    }
 }
