@@ -82,6 +82,7 @@ final class NetworkRunnable implements Runnable {
         
         Map<Class<?>, Processor> processorsMap = new HashMap<>();
         processorsMap.put(TcpCreateRequest.class, this::processTcpCreateRequest);
+        processorsMap.put(TcpServerCreateRequest.class, this::processTcpServerCreateRequest);
         processorsMap.put(UdpCreateRequest.class, this::processUdpCreateRequest);
         processorsMap.put(LocalIpAddressesRequest.class, this::processLocalIpAddressesRequest);
         processorsMap.put(TcpWriteRequest.class, this::processTcpWriteRequest);
@@ -442,8 +443,7 @@ final class NetworkRunnable implements Runnable {
         processor.process(msg, proxySuffix, selfSuffix, networkEntry);
     }
     
-    private void processUdpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException { 
+    private void processUdpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) { 
         UdpCreateRequest req = (UdpCreateRequest) msg;
         if (networkEntry != null) {
             queueOutgoingMessage(networkEntry, new ErrorResponse());
@@ -468,7 +468,8 @@ final class NetworkRunnable implements Runnable {
             channelMap.put(channel, entry);
 
             queueOutgoingMessage(entry, new UdpCreateResponse());
-        } catch (RuntimeException re) {
+        } catch (IOException | RuntimeException re) {
+            // cleanup here, user can still send CloseRequest
             if (channel != null) {
                 IOUtils.closeQuietly(channel);
             }
@@ -483,8 +484,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
 
-    private void processTcpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException {
+    private void processTcpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
         TcpCreateRequest req = (TcpCreateRequest) msg;
         if (networkEntry != null) {
             queueOutgoingMessage(networkEntry, new ErrorResponse());
@@ -509,7 +509,8 @@ final class NetworkRunnable implements Runnable {
 
             idMap.put(selfSuffix, entry);
             channelMap.put(channel, entry);
-        } catch (RuntimeException re) {
+        } catch (IOException | RuntimeException re) {
+            // cleanup here, user can still send CloseRequest
             if (channel != null) {
                 IOUtils.closeQuietly(channel);
             }
@@ -524,8 +525,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
 
-    private void processTcpServerCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException {
+    private void processTcpServerCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
         TcpServerCreateRequest req = (TcpServerCreateRequest) msg;
         if (networkEntry != null) {
             queueOutgoingMessage(networkEntry, new ErrorResponse());
@@ -549,7 +549,7 @@ final class NetworkRunnable implements Runnable {
             channelMap.put(channel, entry);
 
             queueOutgoingMessage(entry, new TcpServerCreateResponse());
-        } catch (RuntimeException re) {
+        } catch (IOException | RuntimeException re) {
             if (channel != null) {
                 IOUtils.closeQuietly(channel);
             }
@@ -564,8 +564,7 @@ final class NetworkRunnable implements Runnable {
         }
     }
     
-    private void processLocalIpAddressesRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException {
+    private void processLocalIpAddressesRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
 //      LocalIpAddressesRequest req = (LocalIpAddressesRequest) msg;
         Set<InetAddress> ret = new HashSet<>();
         try {
@@ -581,14 +580,13 @@ final class NetworkRunnable implements Runnable {
                 }
             }
             queueOutgoingMessage(selfSuffix, proxySuffix, new LocalIpAddressesResponse(ret));
-        } catch (RuntimeException re) {
+        } catch (IOException | RuntimeException re) {
             LOG.error("Unable to process message", re);
             queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
         }
     }
     
-    private void processTcpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException {
+    private void processTcpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
         TcpWriteRequest req = (TcpWriteRequest) msg;
         if (networkEntry == null) {
             queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
@@ -607,14 +605,13 @@ final class NetworkRunnable implements Runnable {
             }
             AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
             updateSelectionKey(entry, channel);
-        } catch (RuntimeException re) {
+        } catch (IOException | RuntimeException re) {
             queueOutgoingMessage(networkEntry, new ErrorResponse());
             LOG.error("Unable to process message: {}", networkEntry, re);
         }
     }
     
-    private void processUdpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException {
+    private void processUdpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
         UdpWriteRequest req = (UdpWriteRequest) msg;
         if (networkEntry == null) {
             queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
@@ -631,14 +628,13 @@ final class NetworkRunnable implements Runnable {
             outBuffers.add(new AddressedByteBuffer(writeBuffer, writeAddress));
             AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
             updateSelectionKey(entry, channel);
-        } catch (RuntimeException re) {
+        } catch (IOException | RuntimeException re) {
             queueOutgoingMessage(networkEntry, new ErrorResponse());
             LOG.error("Unable to process message: {}", networkEntry, re);
         }
     }
     
-    private void processCloseRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry)
-            throws IOException {
+    private void processCloseRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
         if (networkEntry == null) {
             queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
             LOG.error("Socket does not exist: {}", networkEntry);
@@ -655,7 +651,7 @@ final class NetworkRunnable implements Runnable {
     }
     
     private interface Processor {
-        void process(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) throws IOException;
+        void process(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry);
     }
 
     private void queueOutgoingMessage(Message requestEnvelope, Object msg) {
