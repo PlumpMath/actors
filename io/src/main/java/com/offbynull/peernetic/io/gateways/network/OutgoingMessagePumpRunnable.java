@@ -22,10 +22,13 @@ import com.offbynull.peernetic.core.shuttle.Shuttle;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static java.util.stream.Collectors.groupingBy;
 
 // This thread is basically an intermediary between NIO and the receiving shuttle. Originally intended for if decoupling deserialization
 // from NIO selection thread such that deserialization wouldn't block NIO access if it was slow. Not required anymore since we're no longer
@@ -34,23 +37,13 @@ final class OutgoingMessagePumpRunnable implements Runnable {
     
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingMessagePumpRunnable.class);
 
-    private final Address selfPrefix;
-    private final Address proxyPrefix;
-    
     // from NIO thread to this pump
-    private final LinkedBlockingQueue<Message> inQueue;
-    private final Shuttle outShuttle;
+    private final LinkedBlockingQueue<MessageWithShuttle> inQueue;
     
-    public OutgoingMessagePumpRunnable(Address selfPrefix, Address proxyPrefix, Shuttle proxyShuttle, LinkedBlockingQueue<Message> inQueue) {
+    public OutgoingMessagePumpRunnable(Address selfPrefix, LinkedBlockingQueue<MessageWithShuttle> inQueue) {
         Validate.notNull(selfPrefix);
-        Validate.notNull(proxyPrefix);
-        Validate.notNull(proxyShuttle);
         Validate.notNull(inQueue);
-        this.selfPrefix = selfPrefix;
-        this.proxyPrefix = proxyPrefix; // the address we're suppose to funnel stuff in to, should be a child of proxyShuttle's address
-        this.outShuttle = proxyShuttle;
         this.inQueue = inQueue;
-        Validate.isTrue(Address.of(proxyShuttle.getPrefix()).isPrefixOf(proxyPrefix));
     }
     
     @Override
@@ -58,19 +51,17 @@ final class OutgoingMessagePumpRunnable implements Runnable {
         try {
             
             while (true) {
-                List<Object> incomingObjs = new LinkedList<>();
+                List<MessageWithShuttle> incomingObjs = new LinkedList<>();
                 
                 // Poll for new packets
-                Object first = inQueue.take();
+                MessageWithShuttle first = inQueue.take();
                 incomingObjs.add(first);
                 inQueue.drainTo(incomingObjs);
 
-                List<Message> outgoingMessages = incomingObjs.stream()
-                        .map(x -> new Message(selfPrefix, proxyPrefix, x)) // wrap in envelope from self to addr we're allowed to talk to
-                        .collect(Collectors.toList());
-
                 // Send messages to shuttle
-                outShuttle.send(outgoingMessages);
+                incomingObjs.stream()
+                        .collect(groupingBy(x -> x.getOutShuttle(), mapping(x -> x.getMessage(), toList()))) // map of shuttle -> messages
+                        .forEach((x, y) -> x.send(y));
             }
         } catch (InterruptedException ie) {
             LOG.debug("Message pump interrupted");
@@ -78,5 +69,26 @@ final class OutgoingMessagePumpRunnable implements Runnable {
         } catch (Exception e) {
             LOG.error("Internal error encountered", e);
         }
+    }
+    
+    public static class MessageWithShuttle {
+        private final Shuttle outShuttle;
+        private final Message message;
+
+        public MessageWithShuttle(Shuttle outShuttle, Message message) {
+            Validate.notNull(outShuttle);
+            Validate.notNull(message);
+            this.outShuttle = outShuttle;
+            this.message = message;
+        }
+
+        public Shuttle getOutShuttle() {
+            return outShuttle;
+        }
+
+        public Message getMessage() {
+            return message;
+        }
+        
     }
 }

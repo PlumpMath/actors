@@ -17,12 +17,10 @@
 package com.offbynull.peernetic.io.gateways.network;
 
 import com.offbynull.peernetic.core.shuttle.Address;
-import com.offbynull.peernetic.core.shuttle.Message;
 import com.offbynull.peernetic.core.shuttles.simple.Bus;
 import java.nio.channels.Selector;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,18 +35,14 @@ final class IncomingMessagePumpRunnable implements Runnable {
     
     private static final Logger LOG = LoggerFactory.getLogger(IncomingMessagePumpRunnable.class);
     
-    private final Address selfPrefix;
-    private final Address proxyPrefix;
-    
     // from this gateway's Shuttle to this pump
     private final Bus bus;
     
     // from this pump to the NIO thread
-    private final LinkedBlockingQueue<Message> outQueue;
+    private final LinkedBlockingQueue<Object> outQueue;
     private final Selector outSelector; // selector is what blocks in the NIO thread
 
-    public IncomingMessagePumpRunnable(Address selfPrefix, Address proxyPrefix, Bus bus, LinkedBlockingQueue<Message> outQueue,
-            Selector outSelector) {
+    public IncomingMessagePumpRunnable(Address selfPrefix, Bus bus, LinkedBlockingQueue<Object> outQueue, Selector outSelector) {
         Validate.notNull(selfPrefix);
         Validate.notNull(proxyPrefix);
         Validate.notNull(bus);
@@ -68,17 +62,11 @@ final class IncomingMessagePumpRunnable implements Runnable {
             while (true) {
                 // Poll for new messages from this gateway's shuttle
                 List<Object> incomingObjects = bus.pull();
-                
-                List<Message> convertedObjects = incomingObjects.stream()
-                        .map(x -> (Message) x)
-                        .filter(x -> selfPrefix.isPrefixOf(x.getSourceAddress())) // only msgs intended for this gateway
-                        .filter(x -> proxyPrefix.isPrefixOf(x.getDestinationAddress())) // only msgs from address we're allowed to talk to
-                        .collect(Collectors.toList());
 
                 // insert and notify if not empty
-                if (!convertedObjects.isEmpty()) {
+                if (!incomingObjects.isEmpty()) {
                     // Notify selector
-                    outQueue.addAll(convertedObjects);
+                    outQueue.addAll(incomingObjects);
                     outSelector.wakeup();
                 }
             }

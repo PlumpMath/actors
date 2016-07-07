@@ -21,6 +21,7 @@ import com.offbynull.peernetic.core.shuttle.Message;
 import com.offbynull.peernetic.core.shuttle.Shuttle;
 import com.offbynull.peernetic.core.shuttles.simple.Bus;
 import static com.offbynull.peernetic.io.gateways.network.InternalUtils.socketAddressToHexString;
+import com.offbynull.peernetic.io.gateways.network.OutgoingMessagePumpRunnable.MessageWithShuttle;
 import com.offbynull.peernetic.io.gateways.network.UdpNetworkEntry.AddressedByteBuffer;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -52,12 +53,11 @@ final class NetworkRunnable implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkRunnable.class);
 
     private final Address selfPrefix;
-    private final Address proxyPrefix;
-    private final Shuttle proxyShuttle; // output shuttle where messages are supposed to go
     private final Bus bus; // bus from this gateway's shuttle
+    private final Map<String, Shuttle> outgoingShuttles;
     
-    private final LinkedBlockingQueue<Message> incomingQueue;
-    private final LinkedBlockingQueue<Message> outgoingQueue;
+    private final LinkedBlockingQueue<MessageWithShuttle> outgoingQueue;
+    private final LinkedBlockingQueue<Object> incomingQueue;
 
     private final Selector selector;
     
@@ -65,18 +65,14 @@ final class NetworkRunnable implements Runnable {
     private final Map<Address, NetworkEntry> idMap; // get by self suffix
     private final Map<Channel, NetworkEntry> channelMap;
     private final ByteBuffer buffer;
-    private LinkedList<Message> localOutQueue;
+    private final LinkedList<MessageWithShuttle> localOutQueue;
     
     private final UnmodifiableMap<Class<?>, Processor> processors;
 
     NetworkRunnable(Address selfPrefix,
-            Address proxyPrefix,
-            Shuttle proxyShuttle,
             Bus bus,
             int bufferSize) {
         Validate.notNull(selfPrefix);
-        Validate.notNull(proxyPrefix);
-        Validate.notNull(proxyShuttle);
         Validate.notNull(bus);
         Validate.isTrue(bufferSize > 0);
         
@@ -91,9 +87,8 @@ final class NetworkRunnable implements Runnable {
         this.processors = (UnmodifiableMap<Class<?>, Processor>) UnmodifiableMap.unmodifiableMap(processorsMap);
         
         this.selfPrefix = selfPrefix;
-        this.proxyPrefix = proxyPrefix;
-        this.proxyShuttle = proxyShuttle;
         this.bus = bus;
+        this.outgoingShuttles = new HashMap<>();
         
         this.incomingQueue = new LinkedBlockingQueue<>();
         this.outgoingQueue = new LinkedBlockingQueue<>();
@@ -115,12 +110,12 @@ final class NetworkRunnable implements Runnable {
         LOG.debug("Starting gateway");
         
         LOG.info("Creating message pump threads");
-        // messages leaving us to proxy
-        Runnable outRunnable = new OutgoingMessagePumpRunnable(selfPrefix, proxyPrefix, proxyShuttle, incomingQueue);
+        // messages leaving us to outside
+        Runnable outRunnable = new OutgoingMessagePumpRunnable(selfPrefix, outgoingQueue);
         Thread inThread = new Thread(outRunnable, "NIO Out Msg Pump - " + selfPrefix);
         inThread.setDaemon(true);
-        // messages arriving to us from proxy
-        Runnable inRunnable = new IncomingMessagePumpRunnable(selfPrefix, proxyPrefix, bus, outgoingQueue, selector);
+        // messages arriving to us from outside
+        Runnable inRunnable = new IncomingMessagePumpRunnable(selfPrefix, bus, incomingQueue, selector);
         Thread outThread = new Thread(inRunnable, "NIO In Msg Pump - " + selfPrefix);
         outThread.setDaemon(true);
         
@@ -159,10 +154,24 @@ final class NetworkRunnable implements Runnable {
                 }
                 
                 // Get incoming messages and process
-                LinkedList<Message> localInQueue = new LinkedList<>();
+                LinkedList<Object> localInQueue = new LinkedList<>();
                 incomingQueue.drainTo(localInQueue);
-                for (Message incomingEnvelope : localInQueue) {
-                    processMessage(incomingEnvelope);
+                for (Object incomingObj : localInQueue) {
+                    if (incomingObj instanceof Message) {
+                        processMessage((Message) incomingObj);
+                    } else if (incomingObj instanceof AddShuttle) {
+                        AddShuttle addShuttle = (AddShuttle) incomingObj;
+                        Shuttle shuttle = addShuttle.getShuttle();
+                        Shuttle existingShuttle = outgoingShuttles.putIfAbsent(shuttle.getPrefix(), shuttle);
+                        Validate.validState(existingShuttle == null);
+                    } else if (incomingObj instanceof RemoveShuttle) {
+                        RemoveShuttle removeShuttle = (RemoveShuttle) incomingObj;
+                        String prefix = removeShuttle.getPrefix();
+                        Shuttle oldShuttle = outgoingShuttles.remove(prefix);
+                        Validate.validState(oldShuttle != null);
+                    } else {
+                        LOG.warn("Unexpected message type encountered: {}", incomingObj);
+                    }
                 }
                 
                 // Push outgoing messages
@@ -350,8 +359,8 @@ final class NetworkRunnable implements Runnable {
 
             
             Address selfSuffix = entry.getSelfSuffix().appendSuffix(socketAddressToHexString(socketChannel));
-            Address proxySuffix = entry.getProxySuffix().appendSuffix(socketAddressToHexString(socketChannel));
-            TcpNetworkEntry tcpEntry = new TcpNetworkEntry(selfSuffix, proxySuffix, channel);
+            Address connectionAddress = entry.getInitiatingAddress().appendSuffix(socketAddressToHexString(socketChannel));
+            TcpNetworkEntry tcpEntry = new TcpNetworkEntry(selfSuffix, connectionAddress, channel);
             tcpEntry.setConnecting(false);
 
             idMap.put(selfSuffix, entry);
@@ -367,7 +376,7 @@ final class NetworkRunnable implements Runnable {
                             ((InetSocketAddress) socketChannel.getRemoteAddress()).getAddress(),
                             ((InetSocketAddress) socketChannel.getRemoteAddress()).getPort(),
                             selfPrefix.appendSuffix(selfSuffix),
-                            proxyPrefix.appendSuffix(proxySuffix)));
+                            connectionAddress));
         } catch (IOException ioe) {
             queueOutgoingMessage(entry, new ErrorNotification());
             LOG.error("Exception encountered: {}", entry, ioe);
@@ -422,17 +431,17 @@ final class NetworkRunnable implements Runnable {
         LOG.debug("Processing message: {}", envelope);
 
         Object msg = envelope.getMessage();
-        Address proxySuffix = envelope.getSourceAddress().removePrefix(proxyPrefix);
+        Address sourceAddress = envelope.getSourceAddress();
         Address selfSuffix = envelope.getDestinationAddress().removePrefix(selfPrefix);
         
         NetworkEntry networkEntry = idMap.get(selfSuffix);
         if (networkEntry != null) {
-            Address expectedProxySuffix = networkEntry.getProxySuffix();
+            Address expectedSourceAddress = networkEntry.getInitiatingAddress();
             Address expectedSelfSuffix = networkEntry.getSelfSuffix();
             
-            if (!expectedSelfSuffix.equals(selfSuffix) || !expectedProxySuffix.equals(proxySuffix)) {
+            if (!expectedSelfSuffix.equals(selfSuffix) || !expectedSourceAddress.isPrefixOf(sourceAddress)) {
                 queueOutgoingMessage(envelope, new ErrorResponse());
-                LOG.error("Address suffixes don't match: {} vs {} and {} vs {}", expectedSelfSuffix, proxySuffix,
+                LOG.error("Address suffixes don't match: {} vs {} and {} vs {}", expectedSelfSuffix, sourceAddress,
                         expectedSelfSuffix, selfSuffix);
                 return;
             }
@@ -444,7 +453,7 @@ final class NetworkRunnable implements Runnable {
             return;
         }
         
-        processor.process(msg, proxySuffix, selfSuffix, networkEntry);
+        processor.process(msg, sourceAddress, selfSuffix, networkEntry);
     }
     
     private void processUdpCreateRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) { 
@@ -660,23 +669,34 @@ final class NetworkRunnable implements Runnable {
 
     private void queueOutgoingMessage(Message requestEnvelope, Object msg) {
         Address selfAddress = requestEnvelope.getDestinationAddress();
-        Address proxyAddress = requestEnvelope.getSourceAddress();
-        Message responseEnvelope = new Message(selfAddress, proxyAddress, msg);
-        localOutQueue.add(responseEnvelope);
+        Address sourceAddress = requestEnvelope.getSourceAddress();
+        Message responseEnvelope = new Message(selfAddress, sourceAddress, msg);
+        
+        String outgoingShuttleName = sourceAddress.getElement(0);
+        Shuttle outgoingShuttle = outgoingShuttles.get(outgoingShuttleName);
+        
+        localOutQueue.add(new MessageWithShuttle(outgoingShuttle, responseEnvelope));
     }
 
     private void queueOutgoingMessage(NetworkEntry entry, Object msg) {
         Address selfAddress = selfPrefix.appendSuffix(entry.getSelfSuffix());
-        Address proxyAddress = proxyPrefix.appendSuffix(entry.getProxySuffix());
-        Message envelope = new Message(selfAddress, proxyAddress, msg);
-        localOutQueue.add(envelope);
+        Address initiatingAddress = entry.getInitiatingAddress();
+        Message envelope = new Message(selfAddress, initiatingAddress, msg);
+        
+        String outgoingShuttleName = initiatingAddress.getElement(0);
+        Shuttle outgoingShuttle = outgoingShuttles.get(outgoingShuttleName);
+
+        localOutQueue.add(new MessageWithShuttle(outgoingShuttle, envelope));
     }
 
-    private void queueOutgoingMessage(Address selfSuffix, Address proxySuffix, Object msg) {
+    private void queueOutgoingMessage(Address selfSuffix, Address initiatingAddress, Object msg) {
         Address selfAddress = selfPrefix.appendSuffix(selfSuffix);
-        Address proxyAddress = proxyPrefix.appendSuffix(proxySuffix);
-        Message envelope = new Message(selfAddress, proxyAddress, msg);
-        localOutQueue.add(envelope);
+        Message envelope = new Message(selfAddress, initiatingAddress, msg);
+
+        String outgoingShuttleName = initiatingAddress.getElement(0);
+        Shuttle outgoingShuttle = outgoingShuttles.get(outgoingShuttleName);
+
+        localOutQueue.add(new MessageWithShuttle(outgoingShuttle, envelope));
     }
 
     private void shutdownResources() {

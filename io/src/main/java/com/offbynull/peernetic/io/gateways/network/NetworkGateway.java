@@ -17,6 +17,7 @@
 package com.offbynull.peernetic.io.gateways.network;
 
 import com.offbynull.peernetic.core.gateway.InputGateway;
+import com.offbynull.peernetic.core.gateway.OutputGateway;
 import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.core.shuttle.Shuttle;
 import com.offbynull.peernetic.core.shuttles.simple.Bus;
@@ -27,11 +28,12 @@ import org.apache.commons.lang3.Validate;
  * Network communication gateway.
  * @author Kasra Faghihi
  */
-public final class NetworkGateway implements InputGateway {
+public final class NetworkGateway implements InputGateway, OutputGateway {
 
     private final SimpleShuttle srcShuttle;
-    private NetworkRunnable runnable;
-    private Thread thread;
+    private final NetworkRunnable runnable;
+    private final Thread thread;
+    private final Bus bus;
     
     public NetworkGateway(
             String prefix,
@@ -45,11 +47,11 @@ public final class NetworkGateway implements InputGateway {
         Address outgoingPrefix = Address.of(proxyShuttle.getPrefix());
         Validate.isTrue(outgoingPrefix.isPrefixOf(proxyAddress));
         
-        Bus bus = new Bus();
+        bus = new Bus();
         srcShuttle = new SimpleShuttle(prefix, bus);
         Address selfPrefix = Address.of(prefix);
         
-        runnable = new NetworkRunnable(selfPrefix, proxyAddress, proxyShuttle, bus, 65535);
+        runnable = new NetworkRunnable(selfPrefix, bus, 65535);
         thread = new Thread(runnable, "Network IO - " + selfPrefix);
         thread.setDaemon(true);
         thread.start();
@@ -58,6 +60,18 @@ public final class NetworkGateway implements InputGateway {
     @Override
     public Shuttle getIncomingShuttle() {
         return srcShuttle;
+    }
+
+    @Override
+    public void addOutgoingShuttle(Shuttle shuttle) {
+        Validate.notNull(shuttle);
+        bus.add(new AddShuttle(shuttle));
+    }
+
+    @Override
+    public void removeOutgoingShuttle(String shuttlePrefix) {
+        Validate.notNull(shuttlePrefix);
+        bus.add(new RemoveShuttle(shuttlePrefix));
     }
 
     @Override

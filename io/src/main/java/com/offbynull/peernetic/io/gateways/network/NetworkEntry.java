@@ -23,15 +23,15 @@ import org.apache.commons.lang3.Validate;
 
 abstract class NetworkEntry {
     private final Address selfSuffix;
-    private final Address proxySuffix;
+    private final Address initiatingAddress;
     private final Channel channel;
     private int selectionKey;
     
-    NetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
+    NetworkEntry(Address selfSuffix, Address initiatingAddress, Channel channel) {
         Validate.notNull(channel);
 
         this.selfSuffix = selfSuffix;
-        this.proxySuffix = proxySuffix;
+        this.initiatingAddress = initiatingAddress;
         this.channel = channel;
         this.selectionKey = 0;
     }
@@ -40,8 +40,8 @@ abstract class NetworkEntry {
         return selfSuffix;
     }
 
-    Address getProxySuffix() {
-        return proxySuffix;
+    Address getInitiatingAddress() {
+        return initiatingAddress;
     }
 
     Channel getChannel() {
