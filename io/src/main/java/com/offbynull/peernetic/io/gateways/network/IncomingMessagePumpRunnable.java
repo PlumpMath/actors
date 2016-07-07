@@ -44,12 +44,9 @@ final class IncomingMessagePumpRunnable implements Runnable {
 
     public IncomingMessagePumpRunnable(Address selfPrefix, Bus bus, LinkedBlockingQueue<Object> outQueue, Selector outSelector) {
         Validate.notNull(selfPrefix);
-        Validate.notNull(proxyPrefix);
         Validate.notNull(bus);
         Validate.notNull(outQueue);
         Validate.notNull(outSelector);
-        this.selfPrefix = selfPrefix;
-        this.proxyPrefix = proxyPrefix;
         this.bus = bus;
         this.outQueue = outQueue;
         this.outSelector = outSelector;
