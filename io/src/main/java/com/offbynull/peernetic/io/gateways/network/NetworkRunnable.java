@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ final class NetworkRunnable implements Runnable {
     private final Bus bus; // bus from this gateway's shuttle
     private final Map<String, Shuttle> outgoingShuttles;
     
-    private final LinkedBlockingQueue<MessageWithShuttle> outgoingQueue;
+    private final LinkedBlockingQueue<Object> outgoingQueue;
     private final LinkedBlockingQueue<Object> incomingQueue;
 
     private final Selector selector;
@@ -69,9 +69,7 @@ final class NetworkRunnable implements Runnable {
     
     private final UnmodifiableMap<Class<?>, Processor> processors;
 
-    NetworkRunnable(Address selfPrefix,
-            Bus bus,
-            int bufferSize) {
+    NetworkRunnable(Address selfPrefix, Bus bus, int bufferSize) {
         Validate.notNull(selfPrefix);
         Validate.notNull(bus);
         Validate.isTrue(bufferSize > 0);
@@ -109,23 +107,47 @@ final class NetworkRunnable implements Runnable {
     public void run() {
         LOG.debug("Starting gateway");
         
-        LOG.info("Creating message pump threads");
-        // messages leaving us to outside
-        Runnable outRunnable = new OutgoingMessagePumpRunnable(selfPrefix, outgoingQueue);
-        Thread inThread = new Thread(outRunnable, "NIO Out Msg Pump - " + selfPrefix);
-        inThread.setDaemon(true);
-        // messages arriving to us from outside
-        Runnable inRunnable = new IncomingMessagePumpRunnable(selfPrefix, bus, incomingQueue, selector);
-        Thread outThread = new Thread(inRunnable, "NIO In Msg Pump - " + selfPrefix);
-        outThread.setDaemon(true);
-        
-
+        Thread inThread = null;
+        Thread outThread = null;
         try {
+            LOG.debug("Creating message pump threads");
+            // messages leaving us to outside
+            Runnable outRunnable = new OutgoingMessagePumpRunnable(selfPrefix, outgoingQueue);
+            outThread = new Thread(outRunnable, "NIO Out Msg Pump - " + selfPrefix);
+            outThread.setDaemon(true);
+            outThread.start();
+            // messages arriving to us from outside
+            Runnable inRunnable = new IncomingMessagePumpRunnable(selfPrefix, bus, incomingQueue, selector);
+            inThread = new Thread(inRunnable, "NIO In Msg Pump - " + selfPrefix);
+            inThread.setDaemon(true);
+            inThread.start();
+
+            LOG.debug("Starting loop");
             while (true) {
                 localOutQueue.clear();
 
+                // Wait for more inputs (either IO or messages)
+                LinkedList<Object> localInQueue = new LinkedList<>();
+                if (idMap.isEmpty()) { // If idMap is empty, it means that we have no channels registered with selector. If no channels are
+                                       // registered with the selector, select() returns immediately and we go in to a do-nothing tight
+                                       // loop. As such, if idMap is empty, wait on the incomingQueue instead of the selector. As soon as
+                                       // something is becomes available in the incomingQueue selector.wakeup() gets called as well, so we
+                                       // can call select() immediately afterwords.
+                    LOG.debug("No sockets registered with selector");
+                    Object obj = incomingQueue.take();
+                    localInQueue.add(obj);
+                    incomingQueue.drainTo(localInQueue);
+                    
+                    selector.select();
+                } else { // Otherwise, wait until selector is woken up and drain the queue. If woken up by an incoming message, the
+                         // incomingQueue would have something available in it at this point. incomingQueue is first written to, then the
+                         // selector is woken up.
+                    selector.select();
+                    incomingQueue.drainTo(localInQueue);
+                }
+                
                 // Handle incoming network IO events
-                selector.select();
+                LOG.debug("Processing IO");
                 for (SelectionKey key : selector.selectedKeys()) {
                     if (!key.isValid()) {
                         continue;
@@ -154,8 +176,7 @@ final class NetworkRunnable implements Runnable {
                 }
                 
                 // Get incoming messages and process
-                LinkedList<Object> localInQueue = new LinkedList<>();
-                incomingQueue.drainTo(localInQueue);
+                LOG.debug("Processing incoming messages");
                 for (Object incomingObj : localInQueue) {
                     if (incomingObj instanceof Message) {
                         processMessage((Message) incomingObj);
@@ -178,24 +199,50 @@ final class NetworkRunnable implements Runnable {
                 outgoingQueue.addAll(localOutQueue);
             }
         } catch (Exception e) {
+            Thread.interrupted(); // on close this interrupts, so remove the interrupted status before cleanup
             LOG.error("Encountered unexpected exception", e);
             throw new RuntimeException(e); // rethrow exception
         } finally {
             LOG.debug("Stopping gateway");
+            
+            // queue up error messages to everyone who has an active socket with us
             shutdownResources();
+            
+            // forcefully interrupt the incoming message pump thread such that it won't move new messages
+            if (inThread != null) {
+                inThread.interrupt();
+                try {
+                    inThread.join();
+                } catch (InterruptedException ex) {
+                    Thread.interrupted();
+                    LOG.error("Interrupted while waiting for in pump to stop", ex);
+                }
+            }
+            
+            // add a "death" marker to the outgoing queue so that once all the outgoing messages have been queued to go out, it'll shut down
+            // -- we need this because shutdownResources() added a bunch of messages that need to get sent
+            if (outThread != null) {
+                outgoingQueue.add(OutgoingMessagePumpRunnable.DEATH_MARKER);
+                try {
+                    outThread.join();
+                } catch (InterruptedException ex) {
+                    Thread.interrupted();
+                    LOG.error("Interrupted while waiting for out pump to stop", ex);
+                }
+            }
             LOG.debug("Shutdown of resources complete");
         }
     }
 
     private void handleSelectForTcpChannel(SelectionKey selectionKey, TcpNetworkEntry entry) {
         SocketChannel channel = (SocketChannel) entry.getChannel();
-        if (selectionKey.isConnectable()) {
+        if (selectionKey.isValid() && selectionKey.isConnectable()) {
             tcpConnectReady(channel, entry);
         }
-        if (selectionKey.isReadable()) {
+        if (selectionKey.isValid() && selectionKey.isReadable()) {
             tcpReadReady(channel, entry);
         }
-        if (selectionKey.isWritable()) {
+        if (selectionKey.isValid() && selectionKey.isWritable()) {
             tcpWriteReady(channel, entry);
         }
     }
@@ -216,7 +263,7 @@ final class NetworkRunnable implements Runnable {
                 }
             }
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorResponse());
+            forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorResponse());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
@@ -238,7 +285,7 @@ final class NetworkRunnable implements Runnable {
                 queueOutgoingMessage(entry, new TcpReadNotification(bufferAsArray));
             }
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorNotification());
+            forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorNotification());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }   
@@ -270,7 +317,7 @@ final class NetworkRunnable implements Runnable {
                 }
             }
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorNotification());
+            forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorResponse());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
@@ -302,7 +349,7 @@ final class NetworkRunnable implements Runnable {
                 queueOutgoingMessage(entry, new UdpReadNotification(localAddress, remoteAddress, bufferAsArray));
             }
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorNotification());
+            forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorNotification());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }   
@@ -335,7 +382,7 @@ final class NetworkRunnable implements Runnable {
                 queueOutgoingMessage(entry, new UdpWriteEmptyNotification());
             }
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorNotification());
+            forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorResponse());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
@@ -378,7 +425,7 @@ final class NetworkRunnable implements Runnable {
                             selfPrefix.appendSuffix(selfSuffix),
                             connectionAddress));
         } catch (IOException ioe) {
-            queueOutgoingMessage(entry, new ErrorNotification());
+            forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorNotification());
             LOG.error("Exception encountered: {}", entry, ioe);
         }
     }
@@ -487,11 +534,8 @@ final class NetworkRunnable implements Runnable {
                 IOUtils.closeQuietly(channel);
             }
 
-            if (entry != null) {
-                idMap.remove(entry.getSelfSuffix());
-                channelMap.remove(entry.getChannel());
-            }
-
+            forcefullyShutdownResource(selfSuffix, null); // just in case -- may not have been added to maps yet
+            
             queueOutgoingMessage(entry, new ErrorResponse());
             LOG.error("Unable to create socket: {}", entry, re);
         }
@@ -528,11 +572,8 @@ final class NetworkRunnable implements Runnable {
                 IOUtils.closeQuietly(channel);
             }
 
-            if (entry != null) {
-                idMap.remove(entry.getSelfSuffix());
-                channelMap.remove(entry.getChannel());
-            }
-
+            forcefullyShutdownResource(selfSuffix, null); // just in case -- may not have been added to maps yet
+            
             queueOutgoingMessage(entry, new ErrorResponse());
             LOG.error("Unable to create socket: {}", entry, re);
         }
@@ -567,10 +608,7 @@ final class NetworkRunnable implements Runnable {
                 IOUtils.closeQuietly(channel);
             }
 
-            if (entry != null) {
-                idMap.remove(entry.getSelfSuffix());
-                channelMap.remove(entry.getChannel());
-            }
+            forcefullyShutdownResource(selfSuffix, null); // just in case -- may not have been added to maps yet
 
             queueOutgoingMessage(entry, new ErrorResponse());
             LOG.error("Unable to create socket: {}", entry, re);
@@ -587,9 +625,7 @@ final class NetworkRunnable implements Runnable {
                 Enumeration<InetAddress> addrs = networkInterface.getInetAddresses();
                 while (addrs.hasMoreElements()) {
                     InetAddress addr = addrs.nextElement();
-                    if (!addr.isLoopbackAddress()) {
-                        ret.add(addr);
-                    }
+                    ret.add(addr);
                 }
             }
             queueOutgoingMessage(selfSuffix, proxySuffix, new LocalIpAddressesResponse(ret));
@@ -600,6 +636,8 @@ final class NetworkRunnable implements Runnable {
     }
     
     private void processTcpWriteRequest(Object msg, Address proxySuffix, Address selfSuffix, NetworkEntry networkEntry) {
+        LOG.debug("Processing write request {} for {} from {}", msg, selfSuffix, proxySuffix);
+
         TcpWriteRequest req = (TcpWriteRequest) msg;
         if (networkEntry == null) {
             queueOutgoingMessage(selfSuffix, proxySuffix, new ErrorResponse());
@@ -619,7 +657,7 @@ final class NetworkRunnable implements Runnable {
             AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
             updateSelectionKey(entry, channel);
         } catch (IOException | RuntimeException re) {
-            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            forcefullyShutdownResource(selfSuffix, new ErrorResponse());
             LOG.error("Unable to process message: {}", networkEntry, re);
         }
     }
@@ -642,7 +680,7 @@ final class NetworkRunnable implements Runnable {
             AbstractSelectableChannel channel = (AbstractSelectableChannel) entry.getChannel();
             updateSelectionKey(entry, channel);
         } catch (IOException | RuntimeException re) {
-            queueOutgoingMessage(networkEntry, new ErrorResponse());
+            forcefullyShutdownResource(selfSuffix, new ErrorResponse());
             LOG.error("Unable to process message: {}", networkEntry, re);
         }
     }
@@ -657,10 +695,7 @@ final class NetworkRunnable implements Runnable {
         Channel channel = networkEntry.getChannel();
         IOUtils.closeQuietly(channel);
         
-        idMap.remove(selfSuffix);
-        channelMap.remove(channel);
-
-        queueOutgoingMessage(networkEntry, new CloseResponse());
+        forcefullyShutdownResource(selfSuffix, new CloseResponse());
     }
     
     private interface Processor {
@@ -705,7 +740,7 @@ final class NetworkRunnable implements Runnable {
         for (Address selfSuffix : new HashSet<>(idMap.keySet())) { // shutdownResource removes items from idMap, so create a dupe of set
                                                                    // such that you don't encounter issues with making changes to the set
                                                                    // while you're iterating
-            forcefullyShutdownResource(selfSuffix);
+            forcefullyShutdownResource(selfSuffix, new ErrorNotification());
         }
         
         try {
@@ -717,29 +752,27 @@ final class NetworkRunnable implements Runnable {
         idMap.clear();
     }
 
-    private void forcefullyShutdownResource(Address selfSuffix) {
+    private void forcefullyShutdownResource(Address selfSuffix, Object shutdownMessage) {
         NetworkEntry ne = idMap.remove(selfSuffix);
         
         LOG.debug("{} Attempting to shutdown", selfSuffix);
         
-        Channel channel = null;
+        AbstractSelectableChannel channel = null;
         try {
             channel = ne.getChannel();
-            channelMap.remove(channel);
             
-            queueOutgoingMessage(ne, new ErrorNotification());
+            if (channel != null) {
+                channel.keyFor(selector).cancel();
+                channelMap.remove(channel);
+            }
+            
+            if (shutdownMessage != null) {
+                queueOutgoingMessage(ne, shutdownMessage);
+            }
         } catch (RuntimeException e) {
             LOG.error("{} Error shutting down resource", selfSuffix, e);
         } finally {
             IOUtils.closeQuietly(channel);
-        }
-    }
-
-    public void close() {
-        try {
-            selector.close();
-        } catch (IOException ioe) {
-            LOG.warn("Failed to close", ioe);
         }
     }
 }

@@ -31,8 +31,8 @@ import java.time.Instant;
  * <p>
  * In the following example, there are two {@link Actor}s: {@code sender} and {@code echoer}. {@code sender} sends 10 message and waits for
  * those messages to be echoed back to it, while {@code echoer} echoes back whatever is sent to it. Both of these actors are assigned
- * their own {@link NetworkSimulatorCoroutine} (both called {@code proxy} -- note that each actor is running in its own {@link ActorRunner} so
- * there is no naming conflict here), and pass messages through it to the other to simulate communicating over TCP.
+ * their own {@link NetworkSimulatorCoroutine} (both called {@code proxy} -- note that each actor is running in its own {@link ActorRunner}
+ * so there is no naming conflict here), and pass messages through it to the other to simulate communicating over TCP.
  * <p>
  * This example simulates mild unreliability in terms of message loss and message duplication, and heavy unreliability in terms of
  * out-of-order message arrival (jitter is set to a maximum of 1 second). The line can be modified to change unreliability parameters.

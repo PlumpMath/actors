@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,8 +17,7 @@
 package com.offbynull.peernetic.io.gateways.network;
 
 /**
- * Error notification associated with a socket.  Does not mean that the socket associated with this ID is dead (no longer usable) -- you
- * should still close the socket.
+ * Error notification associated with a socket.  If received, it means the socket is dead (no longer usable).
  * @author Kasra Faghihi
  */
 public final class ErrorNotification {

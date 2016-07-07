@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,88 +26,99 @@ import org.apache.commons.lang3.Validate;
  */
 public final class TcpServerAcceptNotification {
 
-    private final InetAddress sourceAddress;
-    private final int sourcePort;
-    private final InetAddress destinationAddress;
-    private final int destinationPort;
+    private final InetAddress sourceInetAddress;
+    private final int sourceInetPort;
+    private final InetAddress destinationInetAddress;
+    private final int destinationInetPort;
 
-    private final Address sendFromAddress;
-    private final Address sendToAddress;
+    private final Address networkGatewayAddress;
+    private final Address bindAddress;
     
     /**
      * Constructs a {@link TcpCreateRequest} object.
-     * @param sourceAddress source address of the socket that was created
-     * @param sourcePort source port of the socket that was created
-     * @param destinationAddress destination address of the socket that was created
-     * @param destinationPort destination port of the socket that was created
+     * @param sourceInetAddress source address of the socket that was created
+     * @param sourceInetPort source port of the socket that was created
+     * @param destinationInetAddress destination address of the socket that was created
+     * @param destinationInetPort destination port of the socket that was created
+     * @param networkGatewayAddress {@link NetworkGateway} address for this new TCP socket
+     * @param bindAddress actor/gateway address that this new TCP socket is bound to
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code 1 > destinationPort > 65535}
      */
     public TcpServerAcceptNotification(
-            InetAddress sourceAddress,
-            int sourcePort,
-            InetAddress destinationAddress,
-            int destinationPort,
-            Address sendFromAddress,
-            Address sendToAddress) {
-        Validate.notNull(sourceAddress);
-        Validate.inclusiveBetween(1, 65535, sourcePort);
-        Validate.notNull(destinationAddress);
-        Validate.inclusiveBetween(1, 65535, destinationPort);
+            InetAddress sourceInetAddress,
+            int sourceInetPort,
+            InetAddress destinationInetAddress,
+            int destinationInetPort,
+            Address networkGatewayAddress,
+            Address bindAddress) {
+        Validate.notNull(sourceInetAddress);
+        Validate.inclusiveBetween(1, 65535, sourceInetPort);
+        Validate.notNull(destinationInetAddress);
+        Validate.inclusiveBetween(1, 65535, destinationInetPort);
 
-        this.sourceAddress = sourceAddress;
-        this.sourcePort = sourcePort;
-        this.destinationAddress = destinationAddress;
-        this.destinationPort = destinationPort;
-        this.sendFromAddress = sendFromAddress;
-        this.sendToAddress = sendFromAddress;
+        this.sourceInetAddress = sourceInetAddress;
+        this.sourceInetPort = sourceInetPort;
+        this.destinationInetAddress = destinationInetAddress;
+        this.destinationInetPort = destinationInetPort;
+        this.networkGatewayAddress = networkGatewayAddress;
+        this.bindAddress = bindAddress;
     }
 
     /**
      * Source address of the socket that was created.
      * @return source address
      */
-    public InetAddress getSourceAddress() {
-        return sourceAddress;
+    public InetAddress getSourceInetAddress() {
+        return sourceInetAddress;
     }
 
     /**
      * Source port of the socket that was created.
      * @return source address
      */
-    public int getSourcePort() {
-        return sourcePort;
+    public int getSourceInetPort() {
+        return sourceInetPort;
     }
 
     /**
      * Destination address of the socket that was created.
      * @return destination address
      */
-    public InetAddress getDestinationAddress() {
-        return destinationAddress;
+    public InetAddress getDestinationInetAddress() {
+        return destinationInetAddress;
     }
 
     /**
      * Destination port of the socket that was created.
      * @return destination port
      */
-    public int getDestinationPort() {
-        return destinationPort;
+    public int getDestinationInetPort() {
+        return destinationInetPort;
     }
 
-    public Address getSendFromAddress() {
-        return sendFromAddress;
+    /**
+     * {@link NetworkGateway} address for this new TCP socket.
+     * @return network gateway address assigned to this socket
+     */
+    public Address getNetworkGatewayAddress() {
+        return networkGatewayAddress;
     }
 
-    public Address getSendToAddress() {
-        return sendToAddress;
+    /**
+     * Actor/gateway address that this new TCP socket is bound to. This will be a child of the address that initiated the TCP server socket.
+     * @return actor/gateway address bound to this socket
+     */
+    public Address getBindAddress() {
+        return bindAddress;
     }
 
     @Override
     public String toString() {
-        return "TcpServerAcceptNotification{" + "sourceAddress=" + sourceAddress + ", sourcePort=" + sourcePort + ", destinationAddress="
-                + destinationAddress + ", destinationPort=" + destinationPort + ", sendFromAddress=" + sendFromAddress + ", sendToAddress="
-                + sendToAddress + '}';
+        return "TcpServerAcceptNotification{" + "sourceInetAddress=" + sourceInetAddress + ", sourceInetPort=" + sourceInetPort
+                + ", destinationInetAddress=" + destinationInetAddress + ", destinationInetPort=" + destinationInetPort
+                + ", networkGatewayAddress=" + networkGatewayAddress + ", bindAddress=" + bindAddress + '}';
     }
+
 
 }

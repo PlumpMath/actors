@@ -18,6 +18,7 @@ package com.offbynull.peernetic.io.gateways.network;
 
 import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.core.shuttles.simple.Bus;
+import java.io.IOException;
 import java.nio.channels.Selector;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -62,7 +63,7 @@ final class IncomingMessagePumpRunnable implements Runnable {
 
                 // insert and notify if not empty
                 if (!incomingObjects.isEmpty()) {
-                    // Notify selector
+                    LOG.debug("Pushing and waking up selector: {} items", incomingObjects.size());
                     outQueue.addAll(incomingObjects);
                     outSelector.wakeup();
                 }
@@ -74,6 +75,11 @@ final class IncomingMessagePumpRunnable implements Runnable {
             LOG.error("Internal error encountered", e);
         } finally {
             bus.close();
+            try {
+                outSelector.close();
+            } catch (IOException ex) {
+                LOG.error("Unable to close selector", ex);
+            }
         }
     }
 }

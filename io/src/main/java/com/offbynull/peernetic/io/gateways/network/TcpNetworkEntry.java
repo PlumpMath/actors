@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@ package com.offbynull.peernetic.io.gateways.network;
 
 import com.offbynull.peernetic.core.shuttle.Address;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.LinkedList;
 
 final class TcpNetworkEntry extends NetworkEntry {
@@ -27,8 +27,8 @@ final class TcpNetworkEntry extends NetworkEntry {
     private LinkedList<ByteBuffer> outgoingBuffers;
     private boolean notifiedOfWritable;
 
-    TcpNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
-        super(selfSuffix, proxySuffix, channel);
+    TcpNetworkEntry(Address selfSuffix, Address initiatorAddress, AbstractSelectableChannel channel) {
+        super(selfSuffix, initiatorAddress, channel);
         outgoingBuffers = new LinkedList<>();
         notifiedOfWritable = false;
     }

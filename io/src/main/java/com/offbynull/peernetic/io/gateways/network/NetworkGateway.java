@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,17 +35,13 @@ public final class NetworkGateway implements InputGateway, OutputGateway {
     private final Thread thread;
     private final Bus bus;
     
-    public NetworkGateway(
-            String prefix,
-            Shuttle proxyShuttle,
-            Address proxyAddress) {
+    /**
+     * Constructs a {@link NetworkGateway} instance.
+     * @param prefix address prefix for this gateway
+     * @throws NullPointerException if any argument is {@code null}
+     */
+    public NetworkGateway(String prefix) {
         Validate.notNull(prefix);
-        Validate.notNull(proxyShuttle);
-        Validate.notNull(proxyAddress);
-
-        // Validate outgoingAddress is for outgoignShuttle
-        Address outgoingPrefix = Address.of(proxyShuttle.getPrefix());
-        Validate.isTrue(outgoingPrefix.isPrefixOf(proxyAddress));
         
         bus = new Bus();
         srcShuttle = new SimpleShuttle(prefix, bus);
@@ -76,7 +72,7 @@ public final class NetworkGateway implements InputGateway, OutputGateway {
 
     @Override
     public void close() throws Exception {
-        runnable.close();
+        thread.interrupt();
         thread.join();
     }
 }

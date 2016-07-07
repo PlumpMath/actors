@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,15 +20,15 @@ import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.io.gateways.network.UdpNetworkEntry.AddressedByteBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.LinkedList;
 
 final class UdpNetworkEntry extends NetworkEntry {
     private LinkedList<AddressedByteBuffer> outgoingBuffers;
     private boolean notifiedOfWritable;
 
-    UdpNetworkEntry(Address selfSuffix, Address proxySuffix, Channel channel) {
-        super(selfSuffix, proxySuffix, channel);
+    UdpNetworkEntry(Address selfSuffix, Address initiatorAddress, AbstractSelectableChannel channel) {
+        super(selfSuffix, initiatorAddress, channel);
         outgoingBuffers = new LinkedList<>();
         notifiedOfWritable = false;
     }

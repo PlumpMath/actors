@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Kasra Faghihi, All rights reserved.
+ * Copyright (c) 2016, Kasra Faghihi, All rights reserved.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,16 +18,16 @@ package com.offbynull.peernetic.io.gateways.network;
 
 
 import com.offbynull.peernetic.core.shuttle.Address;
-import java.nio.channels.Channel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import org.apache.commons.lang3.Validate;
 
 abstract class NetworkEntry {
     private final Address selfSuffix;
     private final Address initiatingAddress;
-    private final Channel channel;
+    private final AbstractSelectableChannel channel;
     private int selectionKey;
     
-    NetworkEntry(Address selfSuffix, Address initiatingAddress, Channel channel) {
+    NetworkEntry(Address selfSuffix, Address initiatingAddress, AbstractSelectableChannel channel) {
         Validate.notNull(channel);
 
         this.selfSuffix = selfSuffix;
@@ -44,7 +44,7 @@ abstract class NetworkEntry {
         return initiatingAddress;
     }
 
-    Channel getChannel() {
+    AbstractSelectableChannel getChannel() {
         return channel;
     }
 
