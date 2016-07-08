@@ -25,7 +25,60 @@ import com.offbynull.peernetic.core.shuttles.simple.SimpleShuttle;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Network communication gateway.
+ * Network communication gateway. 3 types of sockets are supported: TCP, TCP server, and UDP. When you create a socket using this gateway,
+ * all operations on that socket must be performed from the address that originally created that socket.
+ * <p>
+ * <b><u>TCP sockets</u></b>
+ * To create a TCP socket, use {@link TcpCreateRequest}.
+ * <p>
+ * Request types supported by TCP sockets...
+ * <ul>
+ * <li>{@link TcpWriteRequest}</li>
+ * <li>{@link CloseRequest}</li>
+ * </ul>
+ * Response and notification types supported by TCP sockets...
+ * <ul>
+ * <li>{@link TcpCreateResponse}</li>
+ * <li>{@link TcpWriteResponse}</li>
+ * <li>{@link TcpWriteEmptyNotification}</li>
+ * <li>{@link TcpReadNotification}</li>
+ * <li>{@link TcpReadClosedNotification}</li>
+ * <li>{@link CloseResponse}</li>
+ * </ul>
+ * <p>
+ * <b><u>TCP server sockets</u></b>
+ * To create a TCP server socket, use {@link TcpServerCreateRequest}.
+ * <p>
+ * Request types supported by TCP server sockets...
+ * <ul>
+ * <li>{@link CloseRequest}</li>
+ * </ul>
+ * Response and notification types supported by TCP server sockets...
+ * <ul>
+ * <li>{@link TcpServerCreateResponse}</li>
+ * <li>{@link TcpServerAcceptNotification}</li>
+ * <li>{@link CloseResponse}</li>
+ * </ul>
+ * NOTE: When a {@link TcpServerAcceptNotification} arrives, it means a new TCP socket is created. The TCP socket will be bound to a child
+ * of the address that created the TCP server socket. Closing the TCP server socket won't close the TCP sockets it created -- you need to
+ * explicitly close them yourself.
+ * <p>
+ * <b><u>UDP sockets</u></b>
+ * To create a UDP socket, use {@link UdpCreateRequest}.
+ * <p>
+ * Request types supported by UDP sockets...
+ * <ul>
+ * <li>{@link UdpWriteRequest}</li>
+ * <li>{@link CloseRequest}</li>
+ * </ul>
+ * Response and notification types supported by TCP server sockets...
+ * <ul>
+ * <li>{@link UdpCreateResponse}</li>
+ * <li>{@link UdpReadNotification}</li>
+ * <li>{@link UdpWriteEmptyNotification}</li>
+ * <li>{@link UdpWriteResponse}</li>
+ * <li>{@link CloseResponse}</li>
+ * </ul>
  * @author Kasra Faghihi
  */
 public final class NetworkGateway implements InputGateway, OutputGateway {
