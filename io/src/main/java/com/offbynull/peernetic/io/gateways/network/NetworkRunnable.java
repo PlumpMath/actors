@@ -190,6 +190,8 @@ final class NetworkRunnable implements Runnable {
                         String prefix = removeShuttle.getPrefix();
                         Shuttle oldShuttle = outgoingShuttles.remove(prefix);
                         Validate.validState(oldShuttle != null);
+                    } else if (incomingObj instanceof Shutdown) {
+                        return;
                     } else {
                         LOG.warn("Unexpected message type encountered: {}", incomingObj);
                     }
@@ -199,7 +201,6 @@ final class NetworkRunnable implements Runnable {
                 outgoingQueue.addAll(localOutQueue);
             }
         } catch (Exception e) {
-            Thread.interrupted(); // on close this interrupts, so remove the interrupted status before cleanup
             LOG.error("Encountered unexpected exception", e);
             throw new RuntimeException(e); // rethrow exception
         } finally {
@@ -397,31 +398,31 @@ final class NetworkRunnable implements Runnable {
     private void tcpServerAcceptReady(ServerSocketChannel channel, TcpServerNetworkEntry entry) {
         LOG.debug("{} TCP accept", entry);
         try {
-            SocketChannel socketChannel = channel.accept();
-            if (socketChannel == null) {
+            SocketChannel clientChannel = channel.accept();
+            if (clientChannel == null) {
                 LOG.debug("TCP accept returned nothing");
                 return;
             }
-            socketChannel.configureBlocking(false);
+            clientChannel.configureBlocking(false);
 
             
-            Address selfSuffix = entry.getSelfSuffix().appendSuffix(socketAddressToHexString(socketChannel));
-            Address connectionAddress = entry.getInitiatingAddress().appendSuffix(socketAddressToHexString(socketChannel));
-            TcpNetworkEntry tcpEntry = new TcpNetworkEntry(selfSuffix, connectionAddress, channel);
-            tcpEntry.setConnecting(false);
+            Address selfSuffix = entry.getSelfSuffix().appendSuffix(socketAddressToHexString(clientChannel));
+            Address connectionAddress = entry.getInitiatingAddress().appendSuffix(socketAddressToHexString(clientChannel));
+            TcpNetworkEntry clientEntry = new TcpNetworkEntry(selfSuffix, connectionAddress, clientChannel);
+            clientEntry.setConnecting(false);
 
-            idMap.put(selfSuffix, entry);
-            channelMap.put(channel, entry);
+            idMap.put(selfSuffix, clientEntry);
+            channelMap.put(clientChannel, clientEntry);
             
-            updateSelectionKey(tcpEntry, channel);
+            updateSelectionKey(clientEntry, clientChannel);
             
             queueOutgoingMessage(
                     entry,
                     new TcpServerAcceptNotification(
-                            ((InetSocketAddress) socketChannel.getLocalAddress()).getAddress(),
-                            ((InetSocketAddress) socketChannel.getLocalAddress()).getPort(),
-                            ((InetSocketAddress) socketChannel.getRemoteAddress()).getAddress(),
-                            ((InetSocketAddress) socketChannel.getRemoteAddress()).getPort(),
+                            ((InetSocketAddress) clientChannel.getLocalAddress()).getAddress(),
+                            ((InetSocketAddress) clientChannel.getLocalAddress()).getPort(),
+                            ((InetSocketAddress) clientChannel.getRemoteAddress()).getAddress(),
+                            ((InetSocketAddress) clientChannel.getRemoteAddress()).getPort(),
                             selfPrefix.appendSuffix(selfSuffix),
                             connectionAddress));
         } catch (IOException ioe) {
@@ -519,7 +520,7 @@ final class NetworkRunnable implements Runnable {
 
             // Would directly call DatagramChannel.bind(), but this doesn't look to be available on android. Doing this on Java 7/8
             // performs the same function -- it probably does the same on Android as well?
-            channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), 0));
+            channel.socket().bind(new InetSocketAddress(req.getSourceAddress(), req.getSourcePort()));
 
             entry = new UdpNetworkEntry(selfSuffix, proxySuffix, channel);
             updateSelectionKey(entry, channel);

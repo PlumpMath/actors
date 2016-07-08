@@ -39,6 +39,7 @@
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
     <module name="RegexpHeader">
+        <property name="fileExtensions" value="java"/>
         <property name="headerFile" value="${checkstyle.header.file}"/> 
     </module>
 

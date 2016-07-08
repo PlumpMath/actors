@@ -72,7 +72,7 @@ public final class NetworkGateway implements InputGateway, OutputGateway {
 
     @Override
     public void close() throws Exception {
-        thread.interrupt();
+        bus.add(new Shutdown());
         thread.join();
     }
 }

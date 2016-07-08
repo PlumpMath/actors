@@ -24,16 +24,21 @@ import org.apache.commons.lang3.Validate;
  * @author Kasra Faghihi
  */
 public final class UdpCreateRequest {
-    private InetAddress sourceAddress;
+    private final InetAddress sourceAddress;
+    private final int sourcePort;
 
     /**
      * Constructs a {@link UdpCreateRequest} object.
      * @param sourceAddress source address of the socket to be created
+     * @param sourcePort source port of the socket to be created (0 means pick any
      * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code sourcePort < 0 || sourcePort > 65535}
      */
-    public UdpCreateRequest(InetAddress sourceAddress) {
+    public UdpCreateRequest(InetAddress sourceAddress, int sourcePort) {
         Validate.notNull(sourceAddress);
+        Validate.isTrue(sourcePort >= 0 && sourcePort <= 65535);
         this.sourceAddress = sourceAddress;
+        this.sourcePort = sourcePort;
     }
 
     /**
@@ -44,8 +49,16 @@ public final class UdpCreateRequest {
         return sourceAddress;
     }
 
+    /**
+     * Source port of the socket to be created.
+     * @return source port
+     */
+    public int getSourcePort() {
+        return sourcePort;
+    }
+
     @Override
     public String toString() {
-        return "UdpCreateRequest{" + "sourceAddress=" + sourceAddress + '}';
+        return "UdpCreateRequest{" + "sourceAddress=" + sourceAddress + ", sourcePort=" + sourcePort + '}';
     }
 }
