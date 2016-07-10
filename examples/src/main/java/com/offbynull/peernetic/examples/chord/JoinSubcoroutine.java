@@ -26,12 +26,6 @@ final class JoinSubcoroutine implements Subcoroutine<Void> {
         this.idGenerator = state.getIdGenerator();
         this.bootstrapLinkId = bootstrapLinkId;
     }
-
-
-    @Override
-    public Address getAddress() {
-        return subAddress;
-    }
     
     @Override
     public Void run(Continuation cnt) throws Exception {
@@ -62,7 +56,7 @@ final class JoinSubcoroutine implements Subcoroutine<Void> {
         
         String idSuffix = idGenerator.generate();
         InitFingerTableSubcoroutine innerCoroutine = new InitFingerTableSubcoroutine(
-                subAddress.appendSuffix(idSuffix),
+                subAddress.append(idSuffix),
                 state,
                 initialLinkId);
         innerCoroutine.run(cnt);

@@ -31,14 +31,14 @@ final class FollowerSubcoroutine extends AbstractRaftServerSubcoroutine {
         Address graphAddress = state.getGraphAddress();
         String selfLink = state.getSelfLinkId();
 
-        ctx.addOutgoingMessage(logAddress, debug("Entering follower mode"));
-        ctx.addOutgoingMessage(graphAddress, new StyleNode(selfLink, 0x0000FF));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Entering follower mode"));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleNode(selfLink, 0x0000FF));
 
         // Set up initial timeout
         timeoutObj = new ElectionTimeout();
         int waitTime = state.nextElectionTimeout();
-        ctx.addOutgoingMessage(logAddress, debug("Election timeout waiting for {}ms", waitTime));
-        ctx.addOutgoingMessage(timerAddress.appendSuffix("" + waitTime), timeoutObj);
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Election timeout waiting for {}ms", waitTime));
+        ctx.addOutgoingMessage(ctx.getSelf(), timerAddress.append("" + waitTime), timeoutObj);
 
         while (true) {
             cnt.suspend();
@@ -46,7 +46,7 @@ final class FollowerSubcoroutine extends AbstractRaftServerSubcoroutine {
             Object msg = ctx.getIncomingMessage();
             if (msg == timeoutObj) {
                 // The timeout has been hit without a heartbeat coming in. Switch to candidate mode and exit.
-                ctx.addOutgoingMessage(logAddress, debug("Election timeout elapsed, switching to candidate"));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Election timeout elapsed, switching to candidate"));
 
                 return CANDIDATE;
             }
@@ -68,8 +68,8 @@ final class FollowerSubcoroutine extends AbstractRaftServerSubcoroutine {
 
         timeoutObj = new ElectionTimeout();
         int waitTime = state.nextElectionTimeout();
-        ctx.addOutgoingMessage(logAddress, debug("Got heartbeat. Resetting electing timeout for {}ms", waitTime));
-        ctx.addOutgoingMessage(timerAddress.appendSuffix("" + waitTime), timeoutObj);
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Got heartbeat. Resetting electing timeout for {}ms", waitTime));
+        ctx.addOutgoingMessage(ctx.getSelf(), timerAddress.append("" + waitTime), timeoutObj);
 
         return null;
     }
@@ -81,11 +81,11 @@ final class FollowerSubcoroutine extends AbstractRaftServerSubcoroutine {
 
         String leaderLinkId = state.getVotedForLinkId();
         if (leaderLinkId == null) {
-            ctx.addOutgoingMessage(logAddress, debug("Responding with retry (follower w/o leader)"));
-            ctx.addOutgoingMessage(src, new RetryResponse());
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with retry (follower w/o leader)"));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new RetryResponse());
         } else {
-            ctx.addOutgoingMessage(logAddress, debug("Responding with redirect to {}", leaderLinkId));
-            ctx.addOutgoingMessage(src, new RedirectResponse(leaderLinkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with redirect to {}", leaderLinkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new RedirectResponse(leaderLinkId));
         }
 
         return null;
@@ -98,11 +98,11 @@ final class FollowerSubcoroutine extends AbstractRaftServerSubcoroutine {
 
         String leaderLinkId = state.getVotedForLinkId();
         if (leaderLinkId == null) {
-            ctx.addOutgoingMessage(logAddress, debug("Responding with retry (follower w/o leader)"));
-            ctx.addOutgoingMessage(src, new RetryResponse());
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with retry (follower w/o leader)"));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new RetryResponse());
         } else {
-            ctx.addOutgoingMessage(logAddress, debug("Responding with redirect to {}", leaderLinkId));
-            ctx.addOutgoingMessage(src, new RedirectResponse(leaderLinkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with redirect to {}", leaderLinkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new RedirectResponse(leaderLinkId));
         }
 
         return null;

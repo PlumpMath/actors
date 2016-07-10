@@ -49,38 +49,54 @@ public final class ChordClientCoroutine implements Coroutine {
         String bootstrapLinkId = start.getBootstrapLinkId();
         AddressTransformer addressTransformer = start.getAddressTransformer();
 
-        ctx.addOutgoingMessage(graphAddress, new AddNode(graphId));
-        ctx.addOutgoingMessage(graphAddress, new StyleNode(graphId, 0xFFFF00));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddNode(graphId));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleNode(graphId, 0xFFFF00));
 
         Set<GraphLink> lastOutgoingLinks = new HashSet<>();
         try {
             State state = new State(timerAddress, graphAddress, logAddress, seed, selfId, addressTransformer);
 
             // Join (or just initialize if no bootstrap node is set)
-            JoinSubcoroutine joinTask = new JoinSubcoroutine(JOIN_RELATIVE_ADDRESS, state, bootstrapLinkId);
+            Address joinTaskAddress = ctx.getSelf().append(JOIN_RELATIVE_ADDRESS);
+            JoinSubcoroutine joinTask = new JoinSubcoroutine(joinTaskAddress, state, bootstrapLinkId);
             joinTask.run(cnt);
 
-            ctx.addOutgoingMessage(graphAddress, new StyleNode(graphId, 0x00FF00));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleNode(graphId, 0x00FF00));
             lastOutgoingLinks = updateOutgoingLinksOnGraph(state, lastOutgoingLinks, ctx, graphId, graphAddress);
 
             // Create maintanence tasks that are supposed to run in parallel
-            SubcoroutineRouter router = new SubcoroutineRouter(ROUTER_RELATIVE_ADDRESS, ctx);
+            Address routerAddress = ctx.getSelf().append(ROUTER_RELATIVE_ADDRESS);
+            SubcoroutineRouter router = new SubcoroutineRouter(routerAddress, ctx);
             Controller controller = router.getController();
 
+            Address updateOthersAddress = ctx.getSelf().append(ROUTER_UPDATEOTHERS_RELATIVE_ADDRESS);
             controller.add(
-                    new UpdateOthersSubcoroutine(ROUTER_UPDATEOTHERS_RELATIVE_ADDRESS, state),
+                    updateOthersAddress,
+                    new UpdateOthersSubcoroutine(updateOthersAddress, state),
                     AddBehaviour.ADD_PRIME);
+            
+            Address fixFingerTableAddress = ctx.getSelf().append(ROUTER_FIXFINGER_RELATIVE_ADDRESS);
             controller.add(
-                    new FixFingerTableSubcoroutine(ROUTER_FIXFINGER_RELATIVE_ADDRESS, state),
+                    fixFingerTableAddress,
+                    new FixFingerTableSubcoroutine(fixFingerTableAddress, state),
                     AddBehaviour.ADD_PRIME_NO_FINISH);
+            
+            Address stabilizeAddress = ctx.getSelf().append(ROUTER_STABILIZE_RELATIVE_ADDRESS);
             controller.add(
-                    new StabilizeSubcoroutine(ROUTER_STABILIZE_RELATIVE_ADDRESS, state),
+                    stabilizeAddress,
+                    new StabilizeSubcoroutine(stabilizeAddress, state),
                     AddBehaviour.ADD_PRIME_NO_FINISH);
+            
+            Address checkPredecessorAddress = ctx.getSelf().append(ROUTER_CHECKPRED_RELATIVE_ADDRESS);
             controller.add(
-                    new CheckPredecessorSubcoroutine(ROUTER_CHECKPRED_RELATIVE_ADDRESS, state),
+                    checkPredecessorAddress,
+                    new CheckPredecessorSubcoroutine(checkPredecessorAddress, state),
                     AddBehaviour.ADD_PRIME_NO_FINISH);
+            
+            Address incomingRequestHandlerAddress = ctx.getSelf().append(ROUTER_HANDLER_RELATIVE_ADDRESS);
             controller.add(
-                    new IncomingRequestHandlerSubcoroutine(ROUTER_HANDLER_RELATIVE_ADDRESS, state),
+                    incomingRequestHandlerAddress,
+                    new IncomingRequestHandlerSubcoroutine(incomingRequestHandlerAddress, state),
                     AddBehaviour.ADD);
 
             // Process messages
@@ -100,9 +116,9 @@ public final class ChordClientCoroutine implements Coroutine {
                 lastOutgoingLinks = updateOutgoingLinksOnGraph(state, lastOutgoingLinks, ctx, graphId, graphAddress);
             }
         } catch (Exception e) {
-            ctx.addOutgoingMessage(logAddress, error("Shutting down client {} -- {}", ctx.getSelf(), e));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, error("Shutting down client {} -- {}", ctx.getSelf(), e));
         } finally {
-            ctx.addOutgoingMessage(graphAddress, new RemoveNode(graphId, true, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveNode(graphId, true, false));
         }
     }
 
@@ -152,7 +168,7 @@ public final class ChordClientCoroutine implements Coroutine {
         removedPointers.removeAll(newLinks);
         removedPointers.forEach(x -> {
             String otherGraphId = x.getExternalPointer().getId().getValueAsBigInteger().toString();
-            ctx.addOutgoingMessage(graphAddress, new RemoveEdge(graphId, otherGraphId));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(graphId, otherGraphId));
         });
 
         Set<GraphLink> addedPointers = new HashSet<>(newLinks);
@@ -161,8 +177,8 @@ public final class ChordClientCoroutine implements Coroutine {
             String otherGraphId = x.getExternalPointer().getId().getValueAsBigInteger().toString();
             int color = x.getColor();
             
-            ctx.addOutgoingMessage(graphAddress, new AddEdge(graphId, otherGraphId));
-            ctx.addOutgoingMessage(graphAddress, new StyleEdge(graphId, otherGraphId, color, 3.0));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(graphId, otherGraphId));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleEdge(graphId, otherGraphId, color, 3.0));
         });
 
         lastOutgoingLinks = newLinks;

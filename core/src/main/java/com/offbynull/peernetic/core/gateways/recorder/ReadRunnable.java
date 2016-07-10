@@ -85,7 +85,7 @@ final class ReadRunnable implements Runnable {
                             Address dstSuffix = x.getDstSuffix();
                             return new Message(
                                     x.getSrcAddress(),
-                                    dstSuffix == null ? dstAddress : dstAddress.appendSuffix(dstSuffix),
+                                    dstSuffix == null ? dstAddress : dstAddress.append(dstSuffix),
                                     x.getMessage());
                         })
                         .collect(Collectors.toList());

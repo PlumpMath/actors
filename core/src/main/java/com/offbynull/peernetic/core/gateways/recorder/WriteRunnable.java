@@ -100,7 +100,7 @@ final class WriteRunnable implements Runnable {
                 .map(x -> {
                     return new RecordedMessage(
                             x.getSourceAddress(),
-                            selfPrefix.appendSuffix(x.getDestinationAddress()),
+                            selfPrefix.append(x.getDestinationAddress()),
                             x.getMessage());
                 })
                 .collect(Collectors.toList());

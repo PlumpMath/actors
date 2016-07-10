@@ -14,21 +14,10 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-package com.offbynull.peernetic.core.actor.helpers;
-
-import com.offbynull.coroutines.user.Continuation;
 
 /**
- * Interface for a child coroutine.
+ * Common classes and utilities.
+ * 
  * @author Kasra Faghihi
- * @param <T> result type
  */
-public interface Subcoroutine<T> {
-    /**
-     * Entry point of this subcoroutine.
-     * @param cnt used to suspend/yield this subcoroutine
-     * @return result of this subcoroutine
-     * @throws Exception if a problem occurs
-     */
-    T run(Continuation cnt) throws Exception;
-}
+package com.offbynull.peernetic.io.common;

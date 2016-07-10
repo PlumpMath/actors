@@ -70,11 +70,6 @@ final class CheckPredecessorSubcoroutine implements Subcoroutine<Void> {
         }
     }
     
-    @Override
-    public Address getAddress() {
-        return subAddress;
-    }
-    
     private void funnelToSleepCoroutine(Continuation cnt, Duration duration) throws Exception {
         new SleepSubcoroutine.Builder()
                 .sourceAddress(subAddress)
@@ -89,7 +84,7 @@ final class CheckPredecessorSubcoroutine implements Subcoroutine<Void> {
         Address destination = state.getAddressTransformer().toAddress(destinationLinkId);
         RequestSubcoroutine<T> requestSubcoroutine = new RequestSubcoroutine.Builder<T>()
                 .sourceAddress(subAddress, idGenerator)
-                .destinationAddress(destination.appendSuffix(ROUTER_HANDLER_RELATIVE_ADDRESS))
+                .destinationAddress(destination.append(ROUTER_HANDLER_RELATIVE_ADDRESS))
                 .request(message)
                 .timerAddress(timerAddress)
                 .addExpectedResponseType(expectedResponseClass)

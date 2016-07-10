@@ -150,7 +150,9 @@ public class NetworkGatewayTest {
             Context ctx = (Context) cnt.getContext();
             
             // create tcp server
-            ctx.addOutgoingMessage(NETWORK_GATEWAY_ADDRESS.appendSuffix("server"),
+            ctx.addOutgoingMessage(
+                    ctx.getSelf(),
+                    NETWORK_GATEWAY_ADDRESS.append("server"),
                     new TcpServerCreateRequest(InetAddress.getLoopbackAddress(), 12345));
             cnt.suspend();
             TcpServerCreateResponse respMsg = ctx.getIncomingMessage();
@@ -158,7 +160,7 @@ public class NetworkGatewayTest {
             
             // wait for first connection
             TcpServerAcceptNotification acceptMsg = ctx.getIncomingMessage();
-            Address bindSubAddress = acceptMsg.getBindAddress().removePrefix(ACTORS_ADDRESS.appendSuffix("server"));
+            Address bindSubAddress = acceptMsg.getBindAddress();
             Address networkGatewayAddress = acceptMsg.getNetworkGatewayAddress();
             
             // send response
@@ -172,7 +174,9 @@ public class NetworkGatewayTest {
             Context ctx = (Context) cnt.getContext();
             
             // create tcp client
-            ctx.addOutgoingMessage(NETWORK_GATEWAY_ADDRESS.appendSuffix("client"),
+            ctx.addOutgoingMessage(
+                    ctx.getSelf(),
+                    NETWORK_GATEWAY_ADDRESS.append("client"),
                     new TcpCreateRequest(InetAddress.getLoopbackAddress(), InetAddress.getLoopbackAddress(), 12345));
             cnt.suspend();
 
@@ -184,7 +188,10 @@ public class NetworkGatewayTest {
             
             // msg comes in, funnel it to direct gateway
             TcpReadNotification readMsg = ctx.getIncomingMessage();
-            ctx.addOutgoingMessage(DIRECT_GATEWAY_ADDRESS, readMsg);
+            ctx.addOutgoingMessage(
+                    ctx.getSelf(),
+                    DIRECT_GATEWAY_ADDRESS,
+                    readMsg);
         };
         
         actorRunner.addActor("server", serverActor, new Object());
@@ -200,10 +207,12 @@ public class NetworkGatewayTest {
         Coroutine serverActor = (Continuation cnt) -> {
             Context ctx = (Context) cnt.getContext();
             
-            Address networkGatewayAddress = NETWORK_GATEWAY_ADDRESS.appendSuffix("server");
+            Address networkGatewayAddress = NETWORK_GATEWAY_ADDRESS.append("server");
                     
             // create udp server
-            ctx.addOutgoingMessage(networkGatewayAddress,
+            ctx.addOutgoingMessage(
+                    ctx.getSelf(),
+                    networkGatewayAddress,
                     new UdpCreateRequest(InetAddress.getLoopbackAddress(), 12345));
             cnt.suspend();
             UdpCreateResponse respMsg = ctx.getIncomingMessage();
@@ -214,6 +223,7 @@ public class NetworkGatewayTest {
             // wait for first message and echo it back
             UdpReadNotification udpRead = ctx.getIncomingMessage();
             ctx.addOutgoingMessage(
+                    ctx.getSelf(),
                     networkGatewayAddress,
                     new UdpWriteRequest(udpRead.getRemoteAddress(), udpRead.getData()));
             
@@ -227,10 +237,12 @@ public class NetworkGatewayTest {
         Coroutine clientActor = (Continuation cnt) -> {
             Context ctx = (Context) cnt.getContext();
             
-            Address networkGatewayAddress = NETWORK_GATEWAY_ADDRESS.appendSuffix("client");
+            Address networkGatewayAddress = NETWORK_GATEWAY_ADDRESS.append("client");
                     
             // create udp client
-            ctx.addOutgoingMessage(networkGatewayAddress,
+            ctx.addOutgoingMessage(
+                    ctx.getSelf(),
+                    networkGatewayAddress,
                     new UdpCreateRequest(InetAddress.getLoopbackAddress(), 12346));
             cnt.suspend();
             UdpCreateResponse respMsg = ctx.getIncomingMessage();
@@ -239,6 +251,7 @@ public class NetworkGatewayTest {
             
             // send message
             ctx.addOutgoingMessage(
+                    ctx.getSelf(),
                     networkGatewayAddress,
                     new UdpWriteRequest(
                             new InetSocketAddress(InetAddress.getLoopbackAddress(), 12345),
@@ -249,7 +262,10 @@ public class NetworkGatewayTest {
                 cnt.suspend();
                 Object resp = ctx.getIncomingMessage();
                 if (resp instanceof UdpReadNotification) {
-                    ctx.addOutgoingMessage(DIRECT_GATEWAY_ADDRESS, resp);
+                    ctx.addOutgoingMessage(
+                            ctx.getSelf(),
+                            DIRECT_GATEWAY_ADDRESS,
+                            resp);
                     break;
                 }
             }

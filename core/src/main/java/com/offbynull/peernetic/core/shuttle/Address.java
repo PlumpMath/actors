@@ -221,24 +221,24 @@ public final class Address implements Serializable {
     }
     
     /**
-     * Adds elements to the end of this address. Equivalent to calling {@code appendSuffix(Address.of(elements)}.
-     * @param elements elements to appendSuffix
+     * Adds elements to the end of this address. Equivalent to calling {@code append(Address.of(elements)}.
+     * @param elements elements to append
      * @return copy of this address with {@code elements} appended
      * @throws NullPointerException if any argument is {@code null} or contains {@code null}
      */
-    public Address appendSuffix(String ... elements) {
+    public Address append(String ... elements) {
         Validate.notNull(elements);
         Validate.noNullElements(elements);
-        return appendSuffix(Address.of(elements));
+        return append(Address.of(elements));
     }
 
     /**
      * Adds elements to the end of this address.
-     * @param child child to add appendSuffix
+     * @param child child to add append
      * @throws NullPointerException if any argument is {@code null} or contains {@code null}
      * @return copy of this address with {@code child} appended
      */
-    public Address appendSuffix(Address child) {
+    public Address append(Address child) {
         Validate.notNull(child);
         
         List<String> newElements = new ArrayList<>(addressElements);
@@ -252,13 +252,13 @@ public final class Address implements Serializable {
      * {@code false}.
      * <p>
      * For example...
-     * {@code isParentOf(Address.of("one", "two"), Address.of("one", "two", "three"))} returns {@code true}
-     * {@code isParentOf(Address.of("one"), Address.of("one", "two", "three"))} returns {@code true}
-     * {@code isParentOf(Address.of("one", "two", "three"), Address.of("one", "two", "three"))} returns {@code true}
-     * {@code isParentOf(Address.of("one", "two", "three", "four"), Address.of("one", "two", "three"))} returns {@code false}
-     * {@code isParentOf(Address.of(""), Address.of("one", "two", "three"))} returns {@code false}
-     * {@code isParentOf(Address.of("xxxxx", "two"), Address.of("one", "two", "three"))} returns {@code false}
-     * {@code isParentOf(Address.of("one", "xxxxx"), Address.of("one", "two", "three"))} returns {@code false}
+     * {@code isPrefixOf(Address.of("one", "two"), Address.of("one", "two", "three"))} returns {@code true}
+     * {@code isPrefixOf(Address.of("one"), Address.of("one", "two", "three"))} returns {@code true}
+     * {@code isPrefixOf(Address.of("one", "two", "three"), Address.of("one", "two", "three"))} returns {@code true}
+     * {@code isPrefixOf(Address.of("one", "two", "three", "four"), Address.of("one", "two", "three"))} returns {@code false}
+     * {@code isPrefixOf(Address.of(""), Address.of("one", "two", "three"))} returns {@code false}
+     * {@code isPrefixOf(Address.of("xxxxx", "two"), Address.of("one", "two", "three"))} returns {@code false}
+     * {@code isPrefixOf(Address.of("one", "xxxxx"), Address.of("one", "two", "three"))} returns {@code false}
      * @param other address to check against
      * @return {@code true} if this address is a prefix of {@code child}, {@code false} otherwise
      * @throws NullPointerException if any argument is {@code null}
@@ -300,13 +300,27 @@ public final class Address implements Serializable {
      * Removes a number of address elements from the end of this address. For example, removing {@code 2} address elements from
      * {@code ["test1", "test2", "test3", "test4"]} will result in {@code ["test1", "test2"]}.
      * @param count number of address elements to remove from the tail of this address
-     * @return a copy of this address with the last {@code removeCount} address elements removed
+     * @return a copy of this address with the last {@code count} address elements removed
      * @throws NullPointerException if any argument is {@code null}
-     * @throws IllegalArgumentException if the number of address elements in this address is less than {@code removeCount}
+     * @throws IllegalArgumentException if the number of address elements in this address is less than {@code count}
      */
     public Address removeSuffix(int count) {
         Validate.isTrue(count >= 0 && count <= addressElements.size());
         List<String> subList = new ArrayList<>(addressElements.subList(0, addressElements.size() - count));
+        return new Address(subList);
+    }
+
+    /**
+     * Gets a number of address elements from the end of this address. For example, getting {@code 2} address elements from
+     * {@code ["test1", "test2", "test3", "test4"]} will result in {@code ["test3", "test4"]}.
+     * @param count number of address elements to get from the end of this address
+     * @return a copy of the last {@code count} elements in this address
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if the number of address elements in this address is less than {@code count}
+     */
+    public Address getSuffix(int count) {
+        Validate.isTrue(count >= 0 && count <= addressElements.size());
+        List<String> subList = new ArrayList<>(addressElements.subList(addressElements.size() - count, addressElements.size()));
         return new Address(subList);
     }
     

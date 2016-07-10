@@ -121,13 +121,13 @@ public final class SourceContext implements Context {
     }
 
     @Override
-    public void addOutgoingMessage(Address sourceId, Address destination, Object message) {
-        // sourceId can be null
-        Validate.notNull(sourceId);
+    public void addOutgoingMessage(Address source, Address destination, Object message) {
+        Validate.notNull(source);
         Validate.notNull(destination);
         Validate.notNull(message);
+        Validate.isTrue(self.isPrefixOf(source));
         Validate.isTrue(!destination.isEmpty());
-        outgoingMessages.add(new BatchedOutgoingMessage(sourceId, destination, message));
+        outgoingMessages.add(new BatchedOutgoingMessage(source, destination, message));
     }
     
     @Override
@@ -155,8 +155,8 @@ public final class SourceContext implements Context {
         return new Context() {
 
             @Override
-            public void addOutgoingMessage(Address sourceId, Address destination, Object message) {
-                SourceContext.this.addOutgoingMessage(sourceId, destination, message);
+            public void addOutgoingMessage(Address source, Address destination, Object message) {
+                SourceContext.this.addOutgoingMessage(source, destination, message);
             }
             
             @Override

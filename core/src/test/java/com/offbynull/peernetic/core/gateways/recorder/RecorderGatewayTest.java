@@ -31,7 +31,7 @@ public class RecorderGatewayTest {
             Address dstAddr = ctx.getIncomingMessage();
 
             for (int i = 0; i < 10; i++) {
-                ctx.addOutgoingMessage(dstAddr, i);
+                ctx.addOutgoingMessage(Address.fromString("sender:sender"), dstAddr, i);
                 cnt.suspend();
                 Validate.isTrue(i == (int) ctx.getIncomingMessage());
             }
@@ -45,7 +45,7 @@ public class RecorderGatewayTest {
             while (true) {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(Address.fromString("echoer:echoer"), src, msg);
                 cnt.suspend();
             }
         };

@@ -28,11 +28,6 @@ final class IncomingLinkSubcoroutine implements Subcoroutine<Void> {
     }
 
     @Override
-    public Address getAddress() {
-        return subAddress;
-    }
-
-    @Override
     public Void run(Continuation cnt) throws Exception {
         Context ctx = (Context) cnt.getContext();
         
@@ -55,7 +50,7 @@ final class IncomingLinkSubcoroutine implements Subcoroutine<Void> {
                 ctx.addOutgoingMessage(subAddress, logAddress, info("Waiting for keepalive from {}", initiatorLinkId));
                 
                 Check check = new Check();
-                ctx.addOutgoingMessage(subAddress, timerAddress.appendSuffix("15000"), check); // check interval
+                ctx.addOutgoingMessage(subAddress, timerAddress.append("15000"), check); // check interval
 
                 // Keep reading in msg until keepalive or timeout
                 while (true) {

@@ -147,6 +147,8 @@ final class ActorRunnable implements Runnable {
         String dstPrefix = dst.getElement(0);
         String dstImmediateId = dst.getElement(1);
         Validate.isTrue(dstPrefix.equals(prefix)); // sanity check
+        
+        Address self = Address.of(dstPrefix, dstImmediateId);
 
         LoadedActor loadedActor = actors.get(dstImmediateId);
         if (loadedActor == null) {
@@ -157,7 +159,7 @@ final class ActorRunnable implements Runnable {
         LOG.debug("Processing message from {} to {} {}", src, dst, msg);
         Actor actor = loadedActor.actor;
         SourceContext context = loadedActor.context;
-        context.setSelf(Address.of(dstPrefix, dstImmediateId));
+        context.setSelf(self);
         context.setIncomingMessage(msg);
         context.setSource(src);
         context.setDestination(dst);
@@ -182,11 +184,10 @@ final class ActorRunnable implements Runnable {
         // Queue up outgoing messages
         List<BatchedOutgoingMessage> batchedOutgoingMessages = context.copyAndClearOutgoingMessages();
         for (BatchedOutgoingMessage batchedOutgoingMessage : batchedOutgoingMessages) {
-            Address srcId = batchedOutgoingMessage.getSource();
-            Address sentFrom = Address.of(dstPrefix, dstImmediateId);
-            
-            if (srcId != null) {
-                sentFrom = sentFrom.appendSuffix(srcId);
+            Address sentFrom = batchedOutgoingMessage.getSource();
+            if (!self.isPrefixOf(sentFrom)) { // sanity check, should never happen
+                LOG.error("Source address is set do a different value than the source address of this actor -- {} vs {}", self, sentFrom);
+                continue;
             }
             
             Message outgoingMessage = new Message(

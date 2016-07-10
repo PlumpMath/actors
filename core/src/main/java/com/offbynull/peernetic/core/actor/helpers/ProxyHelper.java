@@ -105,14 +105,14 @@ public final class ProxyHelper {
     public ForwardInformation generateOutboundForwardInformation() {
         // Get address to proxy to
         Address selfAddr = context.getSelf();
+        Address srcAddr = context.getSource();
         Address dstAddr = context.getDestination();
         Address proxyToAddress = dstAddr.removePrefix(selfAddr); // treat suffix for dst of this msg as address to proxy to
         Validate.validState(!proxyToAddress.isEmpty());
 
-        // Get suffix for from address
-        Address srcAddr = context.getSource();
-        Address proxyFromAddress = srcAddr.removePrefix(actorPrefix); // proxyFromAddress is relative here, but isn't relative for
-                                                                      // generateInboundForwardInformation?
+        // Get address to proxy from (replace prefix)
+        Address relativeSrcAddr = srcAddr.removePrefix(actorPrefix);
+        Address proxyFromAddress = selfAddr.append(relativeSrcAddr);
         
         return new ForwardInformation(proxyFromAddress, proxyToAddress);
     }
@@ -135,13 +135,13 @@ public final class ProxyHelper {
     public ForwardInformation generateInboundForwardInformation() {
         // Get suffix portion of incoming message's destination address
         Address selfAddr = context.getSelf();
+        Address srcAddr = context.getSource();
         Address dstAddr = context.getDestination();
         Address suffix = dstAddr.removePrefix(selfAddr);
-        Address proxyToAddress = actorPrefix.appendSuffix(suffix);
+        Address proxyToAddress = actorPrefix.append(suffix);
         
         // Get sender
-        Address proxyFromAddress = context.getSource(); // proxyFromAddress is absolute here, but isn't absolute for
-                                                        // generateOutboundForwardInformation?
+        Address proxyFromAddress = selfAddr.append(srcAddr);
         
         return new ForwardInformation(proxyFromAddress, proxyToAddress);
     }

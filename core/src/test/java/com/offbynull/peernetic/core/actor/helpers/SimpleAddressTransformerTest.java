@@ -21,25 +21,25 @@ public class SimpleAddressTransformerTest {
 
     @Test
     public void mustProperlyConvertSelfAddressWithSuffixToId() {
-        String id = fixture.toLinkId(SELF_ADDRESS.appendSuffix("hi", "bye"));
+        String id = fixture.toLinkId(SELF_ADDRESS.append("hi", "bye"));
         Assert.assertEquals(SELF_ID, id);
     }
 
     @Test
     public void mustProperlyConvertRemoteAddressToId() {
-        String id = fixture.toLinkId(REMOTE_BASE_ADDRESS.appendSuffix(REMOTE_ID));
+        String id = fixture.toLinkId(REMOTE_BASE_ADDRESS.append(REMOTE_ID));
         Assert.assertEquals(REMOTE_ID, id);
     }
 
     @Test
     public void mustProperlyConvertRemoteAddressWithSuffixToId() {
-        String id = fixture.toLinkId(REMOTE_BASE_ADDRESS.appendSuffix(REMOTE_ID).appendSuffix("hi", "bye"));
+        String id = fixture.toLinkId(REMOTE_BASE_ADDRESS.append(REMOTE_ID).append("hi", "bye"));
         Assert.assertEquals(REMOTE_ID, id);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void mustFailToConvertRemoteAddressToIdWhenPrefixIsTooShort() {
-        Address remoteAddress = REMOTE_BASE_ADDRESS.removeSuffix(1).appendSuffix(REMOTE_ID); // level1:remoteId
+        Address remoteAddress = REMOTE_BASE_ADDRESS.removeSuffix(1).append(REMOTE_ID); // level1:remoteId
         fixture.toLinkId(remoteAddress);
     }
 
@@ -52,7 +52,7 @@ public class SimpleAddressTransformerTest {
     @Test
     public void mustProperlyConvertRemoteLinkToAddress() {
         Address address = fixture.toAddress(REMOTE_ID);
-        Assert.assertEquals(REMOTE_BASE_ADDRESS.appendSuffix(REMOTE_ID), address);
+        Assert.assertEquals(REMOTE_BASE_ADDRESS.append(REMOTE_ID), address);
     }
     
 }

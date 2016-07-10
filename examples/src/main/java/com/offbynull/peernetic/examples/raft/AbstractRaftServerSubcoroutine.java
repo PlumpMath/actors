@@ -21,8 +21,6 @@ import org.apache.commons.lang3.Validate;
 
 abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
 
-    private static final Address EMPTY_ADDRESS = Address.of(); // empty
-
     private final ServerState state;
 
     public AbstractRaftServerSubcoroutine(ServerState state) {
@@ -40,11 +38,6 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
         Subcoroutine<Mode> mainSubcoroutine = new Subcoroutine<Mode>() {
 
             @Override
-            public Address getAddress() {
-                return EMPTY_ADDRESS;
-            }
-
-            @Override
             public Mode run(Continuation cnt) throws Exception {
                 return main(cnt, state);
             }
@@ -57,16 +50,16 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
 
             Mode ret = null;
             if (msg instanceof AppendEntriesRequest) {
-                ctx.addOutgoingMessage(logAddress, debug("Received append entries from {}", src));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Received append entries from {}", src));
                 ret = handleAppendEntriesRequest(ctx, (AppendEntriesRequest) msg, state);
             } else if (msg instanceof RequestVoteRequest) {
-                ctx.addOutgoingMessage(logAddress, debug("Received request vote from {}", src));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Received request vote from {}", src));
                 ret = handleRequestVoteRequest(ctx, (RequestVoteRequest) msg, state);
             } else if (msg instanceof PushEntryRequest) {
-                ctx.addOutgoingMessage(logAddress, debug("Received push entry from {}", src));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Received push entry from {}", src));
                 ret = handlePushEntryRequest(ctx, (PushEntryRequest) msg, state);
             } else if (msg instanceof PullEntryRequest) {
-                ctx.addOutgoingMessage(logAddress, debug("Received pull entry from {}", src));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Received pull entry from {}", src));
                 ret = handlePullEntryRequest(ctx, (PullEntryRequest) msg, state);
             } else {
                 if (!mainStepper.step()) {
@@ -80,11 +73,6 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
             
             cnt.suspend();
         }
-    }
-
-    @Override
-    public final Address getAddress() {
-        return EMPTY_ADDRESS;
     }
 
     protected abstract Mode main(Continuation cnt, ServerState state) throws Exception;
@@ -102,9 +90,9 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
         // 1. Reply false if  term < currentTerm
         int currentTerm = state.getCurrentTerm();
         if (term < currentTerm) {
-            ctx.addOutgoingMessage(logAddress,
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress,
                     debug("Failed append entries. Sent term: {} vs Current term: {}", term, currentTerm));
-            ctx.addOutgoingMessage(src, new AppendEntriesResponse(currentTerm, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new AppendEntriesResponse(currentTerm, false));
             return null;
         }
 
@@ -113,9 +101,9 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
         int prevLogTerm = req.getPrevLogTerm();
 
         if (!state.containsLogEntry(prevLogIndex)) {
-            ctx.addOutgoingMessage(logAddress,
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress,
                     debug("Failed append entries. No log entry at {}", prevLogIndex));
-            ctx.addOutgoingMessage(src, new AppendEntriesResponse(currentTerm, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new AppendEntriesResponse(currentTerm, false));
             return null;
         }
 
@@ -123,10 +111,10 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
         int logEntryTerm = logEntry.getTerm();
 
         if (logEntryTerm != prevLogTerm) {
-            ctx.addOutgoingMessage(logAddress,
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress,
                     debug("Failed append entries. Terms @ idx {} do not match: {} vs {}", prevLogIndex, prevLogTerm,
                             logEntryTerm));
-            ctx.addOutgoingMessage(src, new AppendEntriesResponse(currentTerm, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new AppendEntriesResponse(currentTerm, false));
             return null;
         }
 
@@ -149,7 +137,7 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
 
             if (existingLogEntryTerm != newLogEntryTerm) {
                 // found conflicting entry, clear everything from this index forward
-                ctx.addOutgoingMessage(logAddress, debug("Truncating log from idx {} forward", logEntryIdx));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Truncating log from idx {} forward", logEntryIdx));
                 state.truncateLogEntries(logEntryIdx);
                 break;
             }
@@ -171,8 +159,8 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
             state.setCommitIndex(commitIndex);
         }
 
-        ctx.addOutgoingMessage(logAddress, debug("Responding with Term: {} / Success: {}", currentTerm, true));
-        ctx.addOutgoingMessage(src, new AppendEntriesResponse(currentTerm, true));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with Term: {} / Success: {}", currentTerm, true));
+        ctx.addOutgoingMessage(ctx.getSelf(), src, new AppendEntriesResponse(currentTerm, true));
 
         // No matter what state youre in, if you get a new appendentries (>= to that ofyour current term), switch your mode to
         // follower mode (resets election timeout if already in follower mode) and assume that this is the node in
@@ -183,9 +171,9 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
 
         if (!newVoterId.equals(oldVotedForId)) {
             if (oldVotedForId != null) {
-                ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, oldVotedForId));
+                ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, oldVotedForId));
             }
-            ctx.addOutgoingMessage(graphAddress, new AddEdge(selfLink, newVoterId));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(selfLink, newVoterId));
         }
 
         state.setVotedForLinkId(newVoterId);
@@ -210,7 +198,7 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
 
             String oldVotedForId = state.getVotedForLinkId();
             if (oldVotedForId != null) {
-                ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, oldVotedForId));
+                ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, oldVotedForId));
             }
             state.setVotedForLinkId(null);
         }
@@ -218,9 +206,9 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
         // 1. Reply false if  term < currentTerm
         int currentTerm = state.getCurrentTerm();
         if (term < currentTerm) {
-            ctx.addOutgoingMessage(logAddress,
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress,
                     debug("Failed request vote. Sent term: {} vs Current term: {}", term, currentTerm));
-            ctx.addOutgoingMessage(src, new RequestVoteResponse(currentTerm, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), src, new RequestVoteResponse(currentTerm, false));
             return null;
         }
 
@@ -247,9 +235,9 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
         if (votedForCondition && candidateLogUpToDateOrBetter) {
             if (!candidateId.equals(votedForLinkId)) {
                 if (votedForLinkId != null) {
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, votedForLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, votedForLinkId));
                 }
-                ctx.addOutgoingMessage(graphAddress, new AddEdge(selfLink, candidateId));
+                ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(selfLink, candidateId));
             }
 
             state.setVotedForLinkId(candidateId);
@@ -257,8 +245,8 @@ abstract class AbstractRaftServerSubcoroutine implements Subcoroutine<Mode> {
             voteGranted = true;
         }
 
-        ctx.addOutgoingMessage(logAddress, debug("Responding with Term: {} / Granted : {}", currentTerm, voteGranted));
-        ctx.addOutgoingMessage(src, new RequestVoteResponse(currentTerm, voteGranted));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with Term: {} / Granted : {}", currentTerm, voteGranted));
+        ctx.addOutgoingMessage(ctx.getSelf(), src, new RequestVoteResponse(currentTerm, voteGranted));
 
         return switchToFollower ? FOLLOWER : null;
     }

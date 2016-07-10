@@ -75,7 +75,7 @@ public final class RealtimeViaUdpSimulator {
                 new UdpSimulatorCoroutine(),
                 new StartUdpSimulator(
                         BASE_TIMER_ADDRESS,
-                        BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                        BASE_ACTOR_ADDRESS.append(idStr),
                         () -> new SimpleLine(
                                 randomSeed,
                                 Duration.ofMillis(100L),
@@ -93,8 +93,8 @@ public final class RealtimeViaUdpSimulator {
         String idStr = Integer.toString(id);
         String udpSimProxyIdStr = String.format(SIMULATED_UDP_PROXY_ID_FORMAT, id);
         Address remoteBaseAddr = BASE_ACTOR_ADDRESS
-                    .appendSuffix(udpSimProxyIdStr)
-                    .appendSuffix(BASE_ACTOR_ADDRESS);
+                    .append(udpSimProxyIdStr)
+                    .append(BASE_ACTOR_ADDRESS);
         String connIdStr = connId == null ? null : String.format(SIMULATED_UDP_PROXY_ID_FORMAT, connId);
 
         byte[] seed = new byte[MIN_SEED_SIZE];
@@ -104,7 +104,7 @@ public final class RealtimeViaUdpSimulator {
                 idStr,
                 new UnstructuredClientCoroutine(),
                 new Start(
-                        new SimpleAddressTransformer(remoteBaseAddr, BASE_ACTOR_ADDRESS.appendSuffix(idStr), udpSimProxyIdStr),
+                        new SimpleAddressTransformer(remoteBaseAddr, BASE_ACTOR_ADDRESS.append(idStr), udpSimProxyIdStr),
                         connIdStr,                                                 
                         seed,
                         BASE_TIMER_ADDRESS,

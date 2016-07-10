@@ -141,7 +141,7 @@ public final class RealtimeDirect {
                 idStr,
                 new ChordClientCoroutine(),
                 new Start(
-                        new SimpleAddressTransformer(BASE_ACTOR_ADDRESS, BASE_ACTOR_ADDRESS.appendSuffix(idStr), idStr),
+                        new SimpleAddressTransformer(BASE_ACTOR_ADDRESS, BASE_ACTOR_ADDRESS.append(idStr), idStr),
                         connIdStr,
                         new NodeId(id, bits),
                         seed,
@@ -158,8 +158,8 @@ public final class RealtimeDirect {
         actorRunner.getIncomingShuttle().send(
                 Collections.singleton(
                         new Message(
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
                                 new Kill()
                         )
                 )

@@ -141,6 +141,31 @@ public class AddressTest {
     }
     
     @Test
+    public void mustGetSuffix() {
+        Address fixture = Address.of("one", "xxx", "three");
+        assertEquals(Address.of("xxx", "three"), fixture.getSuffix(2));
+    }
+
+    @Test
+    public void mustBeEmptyIfGetSuffixCountIs0() {
+        Address fixture = Address.of("one", "xxx", "three");
+        assertTrue(fixture.getSuffix(0).isEmpty());
+    }
+
+    @Test
+    public void mustEqualIfGetSuffixCountIsAll() {
+        Address fixture = Address.of("one", "xxx", "three");
+        assertEquals(fixture, fixture.getSuffix(3));
+    }
+
+    @Test
+    public void mustFailToGetSuffixIfCountIsOutOfBounds() {
+        Address fixture = Address.of("one", "xxx", "three");
+        exception.expect(IllegalArgumentException.class);
+        fixture.getSuffix(4);
+    }
+    
+    @Test
     public void mustConstructAnAddressWith0Elements() {
         Address.of(); // no crash means success
     }

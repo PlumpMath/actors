@@ -20,9 +20,9 @@ import static org.mockito.Mockito.when;
 
 public class SubcoroutineRouterTest {
 
-    private static final Address DST_ADDRESS_PREFIX = Address.fromString("local:actor");
-    private static final Address ROUTER_ID = Address.fromString("router");
-    private static final Address CHILD_ID = Address.fromString("router:child");
+    private static final Address ACTOR_ADDRESS = Address.fromString("local:actor");
+    private static final Address ROUTER_ADDRESS = ACTOR_ADDRESS.append("router");
+    private static final Address ROUTER_CHILD_ADDRESS = ACTOR_ADDRESS.append("router", "child");
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -33,13 +33,13 @@ public class SubcoroutineRouterTest {
     @Before
     public void setUp() {
         context = mock(Context.class);
-        fixture = new SubcoroutineRouter(ROUTER_ID, context);
+        fixture = new SubcoroutineRouter(ROUTER_ADDRESS, context);
     }
 
     @Test
     public void mustSilentlyIgnoreForwardsToUnknownChildren() throws Exception {
-        when(context.getSelf()).thenReturn(DST_ADDRESS_PREFIX);
-        when(context.getDestination()).thenReturn(DST_ADDRESS_PREFIX.appendSuffix(CHILD_ID));
+        when(context.getSelf()).thenReturn(ACTOR_ADDRESS);
+        when(context.getDestination()).thenReturn(ROUTER_CHILD_ADDRESS);
         when(context.getIncomingMessage()).thenReturn(new Object());
         ForwardResult res = fixture.forward();
 
@@ -49,24 +49,15 @@ public class SubcoroutineRouterTest {
     @Test
     public void mustForwardToChild() throws Exception {
         MutableInt mutableInt = new MutableInt();
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
-
-            @Override
-            public Address getAddress() {
-                return CHILD_ID;
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                mutableInt.increment();
-                return null;
-            }
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> {
+            mutableInt.increment();
+            return null;
         };
 
-        fixture.getController().add(subcoroutine, ADD);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD);
 
-        when(context.getSelf()).thenReturn(DST_ADDRESS_PREFIX);
-        when(context.getDestination()).thenReturn(DST_ADDRESS_PREFIX.appendSuffix(CHILD_ID));
+        when(context.getSelf()).thenReturn(ACTOR_ADDRESS);
+        when(context.getDestination()).thenReturn(ROUTER_CHILD_ADDRESS);
         when(context.getIncomingMessage()).thenReturn(new Object());
         ForwardResult res = fixture.forward();
 
@@ -77,24 +68,15 @@ public class SubcoroutineRouterTest {
     @Test
     public void mustAddNewChildAndPrime() throws Exception {
         MutableInt mutableInt = new MutableInt();
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
-
-            @Override
-            public Address getAddress() {
-                return CHILD_ID;
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                mutableInt.increment();
-                return null;
-            }
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> {
+            mutableInt.increment();
+            return null;
         };
 
-        when(context.getSelf()).thenReturn(DST_ADDRESS_PREFIX);
-        when(context.getDestination()).thenReturn(DST_ADDRESS_PREFIX.appendSuffix(CHILD_ID));
+        when(context.getSelf()).thenReturn(ACTOR_ADDRESS);
+        when(context.getDestination()).thenReturn(ROUTER_CHILD_ADDRESS);
         when(context.getIncomingMessage()).thenReturn(new Object());
-        fixture.getController().add(subcoroutine, ADD_PRIME);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD_PRIME);
 
         assertEquals(1, mutableInt.intValue());
     }
@@ -102,25 +84,16 @@ public class SubcoroutineRouterTest {
     @Test
     public void mustSilentlyIgnoreForwardsToRemovedChild() throws Exception {
         MutableInt mutableInt = new MutableInt();
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
-
-            @Override
-            public Address getAddress() {
-                return CHILD_ID;
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                mutableInt.increment();
-                cnt.suspend();
-                return null;
-            }
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> {
+            mutableInt.increment();
+            cnt.suspend();
+            return null;
         };
 
-        fixture.getController().add(subcoroutine, ADD);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD);
 
-        when(context.getSelf()).thenReturn(DST_ADDRESS_PREFIX);
-        when(context.getDestination()).thenReturn(DST_ADDRESS_PREFIX.appendSuffix(CHILD_ID));
+        when(context.getSelf()).thenReturn(ACTOR_ADDRESS);
+        when(context.getDestination()).thenReturn(ROUTER_CHILD_ADDRESS);
         when(context.getIncomingMessage()).thenReturn(new Object());
         ForwardResult res = fixture.forward();
 
@@ -128,7 +101,7 @@ public class SubcoroutineRouterTest {
         assertEquals(1, mutableInt.intValue());
         
         
-        fixture.getController().remove(CHILD_ID);
+        fixture.getController().remove(ROUTER_CHILD_ADDRESS);
         
         res = fixture.forward();
         assertFalse(res.isForwarded());
@@ -138,102 +111,60 @@ public class SubcoroutineRouterTest {
     @Test
     public void mustAddNewChildAndPrimeWhenChildDoesNotFinishOnPrime() throws Exception {
         MutableInt mutableInt = new MutableInt();
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
-
-            @Override
-            public Address getAddress() {
-                return CHILD_ID;
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                mutableInt.increment();
-                cnt.suspend();
-                return null;
-            }
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> {
+            mutableInt.increment();
+            cnt.suspend();
+            return null;
         };
 
-        when(context.getSelf()).thenReturn(DST_ADDRESS_PREFIX);
-        when(context.getDestination()).thenReturn(DST_ADDRESS_PREFIX.appendSuffix(CHILD_ID));
+        when(context.getSelf()).thenReturn(ACTOR_ADDRESS);
+        when(context.getDestination()).thenReturn(ROUTER_CHILD_ADDRESS);
         when(context.getIncomingMessage()).thenReturn(new Object());
-        fixture.getController().add(subcoroutine, ADD_PRIME_NO_FINISH);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD_PRIME_NO_FINISH);
         
         assertEquals(1, mutableInt.intValue());
     }
 
     @Test
     public void mustFailAddNewChildAndPrimeWhenChildFinishesOnPrime() throws Exception {
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> null;
 
-            @Override
-            public Address getAddress() {
-                return CHILD_ID;
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                return null;
-            }
-        };
-
-        when(context.getSelf()).thenReturn(DST_ADDRESS_PREFIX);
-        when(context.getDestination()).thenReturn(DST_ADDRESS_PREFIX.appendSuffix(CHILD_ID));
+        when(context.getSelf()).thenReturn(ACTOR_ADDRESS);
+        when(context.getDestination()).thenReturn(ROUTER_CHILD_ADDRESS);
         when(context.getIncomingMessage()).thenReturn(new Object());
         
         exception.expect(IllegalStateException.class);
         
-        fixture.getController().add(subcoroutine, ADD_PRIME_NO_FINISH);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD_PRIME_NO_FINISH);
     }
 
     @Test
     public void mustFailOnConflictingAdd() throws Exception {
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
-
-            @Override
-            public Address getAddress() {
-                return CHILD_ID;
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                return null;
-            }
-        };
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> null;
         
-        fixture.getController().add(subcoroutine, ADD);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD);
         
         exception.expect(IllegalArgumentException.class);
-        fixture.getController().add(subcoroutine, ADD);
+        fixture.getController().add(ROUTER_CHILD_ADDRESS, subcoroutine, ADD);
     }
 
     @Test
     public void mustFailOnIncorrectAdd() throws Exception {
-        Subcoroutine<Void> subcoroutine = new Subcoroutine<Void>() {
-
-            @Override
-            public Address getAddress() {
-                return Address.of("badid");
-            }
-
-            @Override
-            public Void run(Continuation cnt) throws Exception {
-                return null;
-            }
-        };
+        Subcoroutine<Void> subcoroutine = (Continuation cnt) -> null;
         
         exception.expect(IllegalArgumentException.class);
-        fixture.getController().add(subcoroutine, ADD);
+        fixture.getController().add(Address.of("badid"), subcoroutine, ADD);
     }
 
     @Test
     public void mustFailOnMissingRemove() throws Exception {
         exception.expect(IllegalArgumentException.class);
-        fixture.getController().remove(CHILD_ID);
+        fixture.getController().remove(ROUTER_CHILD_ADDRESS);
     }
 
     @Test
     public void mustFailOnIncorrectRemove() throws Exception {
         exception.expect(IllegalArgumentException.class);
-        fixture.getController().remove(ROUTER_ID.appendSuffix("fake"));
+        fixture.getController().remove(ROUTER_ADDRESS.append("fake"));
     }
 }

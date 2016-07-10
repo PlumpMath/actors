@@ -37,8 +37,8 @@ public final class RaftServerCoroutine implements Coroutine {
         ServerState state = new ServerState(timerAddress, graphAddress, logAddress, seed, minElectionTimeout, maxElectionTimeout, selfLink,
                 nodeLinks, addressTransformer);
 
-        ctx.addOutgoingMessage(logAddress, debug("Starting server"));
-        ctx.addOutgoingMessage(graphAddress, new AddNode(selfLink));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Starting server"));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddNode(selfLink));
         
         try {
             SubcoroutineStepper<Mode> stepper;
@@ -78,7 +78,7 @@ public final class RaftServerCoroutine implements Coroutine {
                 }
             }
         } finally {
-            ctx.addOutgoingMessage(graphAddress, new RemoveNode(selfLink, true, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveNode(selfLink, true, false));
         }
     }
 }

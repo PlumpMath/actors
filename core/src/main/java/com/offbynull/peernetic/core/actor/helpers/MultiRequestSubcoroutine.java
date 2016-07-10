@@ -99,7 +99,7 @@ public final class MultiRequestSubcoroutine<T> implements Subcoroutine<List<Resp
             return new ArrayList<>();
         }
         
-        Address routerAddress = sourceAddress.appendSuffix("mrsr"); // mrsr = multirequestsubcoroutinerouter
+        Address routerAddress = sourceAddress.append("mrsr"); // mrsr = multirequestsubcoroutinerouter
         SubcoroutineRouter router = new SubcoroutineRouter(routerAddress, ctx);
         
         RequestSubcoroutine.Builder<T> baseRequestBuilder = new RequestSubcoroutine.Builder<T>()
@@ -113,11 +113,13 @@ public final class MultiRequestSubcoroutine<T> implements Subcoroutine<List<Resp
         Map<Subcoroutine<?>, String> suffixMap = new HashMap<>(); // key = source address suffix, value = request subcoroutine
         for (Entry<String, Address> destinationEntry : destinations.entrySet()) {
             String uniqueSourceAddressSuffix = destinationEntry.getKey();
+            Address reqSourceAddress = routerAddress.append(uniqueSourceAddressSuffix);
+            Address reqDestinationAddress = destinationEntry.getValue();
             RequestSubcoroutine<T> requestSubcoroutine = baseRequestBuilder
-                    .sourceAddress(routerAddress.appendSuffix(uniqueSourceAddressSuffix))
-                    .destinationAddress(destinationEntry.getValue())
+                    .sourceAddress(reqSourceAddress)
+                    .destinationAddress(reqDestinationAddress)
                     .build();
-            router.getController().add(requestSubcoroutine, ADD_PRIME_NO_FINISH);
+            router.getController().add(reqSourceAddress, requestSubcoroutine, ADD_PRIME_NO_FINISH);
             suffixMap.put(requestSubcoroutine, uniqueSourceAddressSuffix);
         }
         
@@ -134,7 +136,7 @@ public final class MultiRequestSubcoroutine<T> implements Subcoroutine<List<Resp
                     Subcoroutine<?> subcoroutine = fr.getSubcoroutine();
 
                     String uniqueSourceAddressSuffix = suffixMap.get(subcoroutine);
-                    Address dstAddress = subcoroutine.getAddress();
+                    Address dstAddress = routerAddress.append(uniqueSourceAddressSuffix);
 
                     @SuppressWarnings("unchecked")
                     Response<T> response = new Response<>(uniqueSourceAddressSuffix, dstAddress, (T) result);
@@ -157,11 +159,6 @@ public final class MultiRequestSubcoroutine<T> implements Subcoroutine<List<Resp
         }
         
         return ret;
-    }
-    
-    @Override
-    public Address getAddress() {
-        return sourceAddress;
     }
 
     /**

@@ -25,7 +25,7 @@ public class MultiRequestSubcoroutineTest {
         testHarness.addActor("rcvr0", (Continuation cnt) -> { // ignore first 0 msgs
             Context ctx = (Context) cnt.getContext();
             while (true) {
-                ctx.addOutgoingMessage(ctx.getSource(), "resp0");
+                ctx.addOutgoingMessage(Address.of("rcvr0"), ctx.getSource(), "resp0");
                 cnt.suspend();
             }
         }, Duration.ZERO, Instant.ofEpochMilli(0L));
@@ -33,7 +33,7 @@ public class MultiRequestSubcoroutineTest {
             Context ctx = (Context) cnt.getContext();
             cnt.suspend();
             while (true) {
-                ctx.addOutgoingMessage(ctx.getSource(), "resp1");
+                ctx.addOutgoingMessage(Address.of("rcvr1"), ctx.getSource(), "resp1");
                 cnt.suspend();
             }
         }, Duration.ZERO, Instant.ofEpochMilli(0L));
@@ -42,13 +42,13 @@ public class MultiRequestSubcoroutineTest {
             cnt.suspend();
             cnt.suspend();
             while (true) {
-                ctx.addOutgoingMessage(ctx.getSource(), "resp2");
+                ctx.addOutgoingMessage(Address.of("rcvr2"), ctx.getSource(), "resp2");
                 cnt.suspend();
             }
         }, Duration.ZERO, Instant.ofEpochMilli(0L));
         testHarness.addActor("test", (Continuation cnt) -> {
             MultiRequestSubcoroutine<String> fixture = new MultiRequestSubcoroutine.Builder<String>()
-                    .sourceAddress(Address.of("fakeid"))
+                    .sourceAddress(Address.fromString("test:fakeid"))
                     .request("reqmsg")
                     .addDestinationAddress("0", Address.of("rcvr0"))
                     .addDestinationAddress("1", Address.of("rcvr1"))
@@ -73,7 +73,7 @@ public class MultiRequestSubcoroutineTest {
             Response<String> resp = resps.get(i);
             assertEquals("resp" + i, resp.getResponse());
             assertEquals("" + i, resp.getUniqueSourceAddressSuffix());
-            assertEquals(Address.fromString("fakeid:mrsr:" + i), resp.getDestinationAddress());
+            assertEquals(Address.fromString("test:fakeid:mrsr:" + i), resp.getDestinationAddress());
         }
     }
 
@@ -86,7 +86,7 @@ public class MultiRequestSubcoroutineTest {
 
         testHarness.addActor("test", (Continuation cnt) -> {
             MultiRequestSubcoroutine<String> fixture = new MultiRequestSubcoroutine.Builder<String>()
-                    .sourceAddress(Address.of("fakeid"))
+                    .sourceAddress(Address.fromString("test:fakeid"))
                     .request("reqmsg")
                     .timerAddress(Address.of("timer"))
                     .addExpectedResponseType(String.class)

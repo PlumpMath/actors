@@ -35,17 +35,12 @@ final class OutgoingQuerySubcoroutine implements Subcoroutine<Void> {
     }
 
     @Override
-    public Address getAddress() {
-        return subAddress;
-    }
-
-    @Override
     public Void run(Continuation cnt) throws Exception {
         Context ctx = (Context) cnt.getContext();
 
         while (true) {
             new SleepSubcoroutine.Builder()
-                    .sourceAddress(subAddress.appendSuffix(idGenerator.generate()))
+                    .sourceAddress(subAddress.append(idGenerator.generate()))
                     .timerAddress(timerAddress)
                     .duration(Duration.ofSeconds(1L))
                     .build()
@@ -65,7 +60,7 @@ final class OutgoingQuerySubcoroutine implements Subcoroutine<Void> {
                     .sourceAddress(subAddress, idGenerator)
                     .request(request)
                     .timerAddress(timerAddress)
-                    .destinationAddress(destination.appendSuffix(ROUTER_HANDLER_RELATIVE_ADDRESS))
+                    .destinationAddress(destination.append(ROUTER_HANDLER_RELATIVE_ADDRESS))
                     .throwExceptionIfNoResponse(false)
                     .addExpectedResponseType(QueryResponse.class)
                     .build();

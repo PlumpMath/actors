@@ -110,7 +110,7 @@ final class InitRouteToCoroutine implements Coroutine {
         Address destination = state.getAddressTransformer().toAddress(destinationLinkId);
         RequestSubcoroutine<T> requestSubcoroutine = new RequestSubcoroutine.Builder<T>()
                 .sourceAddress(subAddress, idGenerator)
-                .destinationAddress(destination.appendSuffix(ROUTER_HANDLER_RELATIVE_ADDRESS))
+                .destinationAddress(destination.append(ROUTER_HANDLER_RELATIVE_ADDRESS))
                 .request(message)
                 .timerAddress(timerAddress)
                 .addExpectedResponseType(expectedResponseClass)

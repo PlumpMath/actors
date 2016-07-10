@@ -34,24 +34,13 @@ import java.util.List;
 public interface Context {
     
     /**
-     * Equivalent to calling {@code addOutgoingMessage(Address.of(), destination, message)}. 
-     * @param destination destination address
-     * @param message outgoing message
-     * @throws NullPointerException if any argument is {@code null}
-     * @throws IllegalArgumentException if {@code destination} is empty
-     */
-    default void addOutgoingMessage(Address destination, Object message) {
-        addOutgoingMessage(Address.of(), destination, message);
-    }
-
-    /**
      * Queue up an outgoing message.
-     * @param source source address, relative to {@link #getSelf()}. For example, if {@link #getSelf() } returns "actor:1" and this
-     * parameter is set to "id1:id2", the source address for the outgoing message being sent will be "actor:1:id1:id2".
+     * @param source source address (must be child of or equal to {@link #getSelf()})
      * @param destination destination address
      * @param message outgoing message
      * @throws NullPointerException if any argument is {@code null}
-     * @throws IllegalArgumentException if {@code destination} is empty
+     * @throws IllegalArgumentException if {@code destination} is empty, or if {@code source} is not a child of or equal to
+     * {@link #getSelf()}
      */
     void addOutgoingMessage(Address source, Address destination, Object message);
     

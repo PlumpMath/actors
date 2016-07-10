@@ -93,7 +93,7 @@ public final class RequestSubcoroutine<T> implements Subcoroutine<T> {
                     request);
             ctx.addOutgoingMessage(
                     sourceAddress,
-                    timerAddressPrefix.appendSuffix("" + attemptInterval.toMillis()),
+                    timerAddressPrefix.append("" + attemptInterval.toMillis()),
                     timeoutMarker);
             
             while (true) {
@@ -142,11 +142,6 @@ public final class RequestSubcoroutine<T> implements Subcoroutine<T> {
         
         return (T) response;
     }
-
-    @Override
-    public Address getAddress() {
-        return sourceAddress;
-    }
     
     /**
      * {@link RequestSubcoroutine} builder. All validation is done in {@link #build() }.
@@ -163,19 +158,18 @@ public final class RequestSubcoroutine<T> implements Subcoroutine<T> {
         private boolean throwExceptionIfNoResponse = true;
 
         /**
-         * Set the source address. Equivalent to calling {@code sourceAddress(baseSourceAddress.appendSuffix(idGenerator.generate()))}.
+         * Set the source address. Equivalent to calling {@code sourceAddress(baseSourceAddress.append(idGenerator.generate()))}.
          * @param baseSourceAddress relative source address
          * @param idGenerator id generator
          * @return this builder
          * @throws NullPointerException if any argument is {@code null}
          */
         public Builder<T> sourceAddress(Address baseSourceAddress, IdGenerator idGenerator) {
-            return sourceAddress(baseSourceAddress.appendSuffix(idGenerator.generate()));
+            return sourceAddress(baseSourceAddress.append(idGenerator.generate()));
         }
 
         /**
-         * Set the source address. The address set by this method must be relative to the calling actor's self address (relative to
-         * {@link Context#getSelf()}). Defaults to {@code null}.
+         * Set the source address. Defaults to {@code null}.
          * @param sourceAddress relative source address
          * @return this builder
          */

@@ -105,7 +105,7 @@ public final class SimpleAddressTransformer implements AddressTransformer {
             Validate.validState(selfAddress != null); // sanity check
             return selfAddress;
         } else {
-            return remoteBaseAddress.appendSuffix(linkId);
+            return remoteBaseAddress.append(linkId);
         }
     }
     

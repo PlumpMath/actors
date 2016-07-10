@@ -36,11 +36,11 @@ final class CandidateSubcoroutine extends AbstractRaftServerSubcoroutine {
         String selfLink = state.getSelfLinkId();
         IdGenerator idGenerator = state.getIdGenerator();
 
-        ctx.addOutgoingMessage(logAddress, debug("Entering candidate mode"));
-        ctx.addOutgoingMessage(graphAddress, new StyleNode(selfLink, 0xFFFF00));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Entering candidate mode"));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleNode(selfLink, 0xFFFF00));
 
         while (true) {
-            ctx.addOutgoingMessage(logAddress, debug("Starting new election"));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Starting new election"));
 
             int currentTerm = state.incrementCurrentTerm();
 
@@ -89,11 +89,11 @@ final class CandidateSubcoroutine extends AbstractRaftServerSubcoroutine {
 
             if (successfulCount.getValue() >= requiredSuccessfulCount) {
                 // Majority of votes have come in for this node. Set mode to leader.
-                ctx.addOutgoingMessage(logAddress, debug("Enough votes acquired, becoming leader... Got: {} Required: {}",
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Enough votes acquired, becoming leader... Got: {} Required: {}",
                         successfulCount.getValue(), requiredSuccessfulCount));
                 return LEADER;
             } else {
-                ctx.addOutgoingMessage(logAddress, debug("Not enough votes, becoming follower... Got: {} Required: {}",
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Not enough votes, becoming follower... Got: {} Required: {}",
                         successfulCount.getValue(), requiredSuccessfulCount));
                 return FOLLOWER;
             }
@@ -105,8 +105,8 @@ final class CandidateSubcoroutine extends AbstractRaftServerSubcoroutine {
         Address src = ctx.getSource();
         Address logAddress = state.getLogAddress();
 
-        ctx.addOutgoingMessage(logAddress, debug("Responding with retry (candidate)"));
-        ctx.addOutgoingMessage(src, new RetryResponse());
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with retry (candidate)"));
+        ctx.addOutgoingMessage(ctx.getSelf(), src, new RetryResponse());
 
         return null;
     }
@@ -116,8 +116,8 @@ final class CandidateSubcoroutine extends AbstractRaftServerSubcoroutine {
         Address src = ctx.getSource();
         Address logAddress = state.getLogAddress();
 
-        ctx.addOutgoingMessage(logAddress, debug("Responding with retry (candidate)"));
-        ctx.addOutgoingMessage(src, new RetryResponse());
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with retry (candidate)"));
+        ctx.addOutgoingMessage(ctx.getSelf(), src, new RetryResponse());
         
         return null;
     }

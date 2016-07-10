@@ -33,11 +33,6 @@ final class IncomingMessageHandlerSubcoroutine implements Subcoroutine<Void> {
     }
 
     @Override
-    public Address getAddress() {
-        return subAddress;
-    }
-
-    @Override
     public Void run(Continuation cnt) throws Exception {
         Context ctx = (Context) cnt.getContext();
 
@@ -69,10 +64,11 @@ final class IncomingMessageHandlerSubcoroutine implements Subcoroutine<Void> {
                 String reqLinkId = state.getAddressTransformer().toLinkId(reqSourceAddress);
 
                 // if we already have an active incominglinksubcoroutine for the sender, return its id 
-                Address reqSuffix = state.getIncomingLinkSuffix(reqLinkId);
-                if (reqSuffix != null) {
-                    ctx.addOutgoingMessage(subAddress, logAddress, info("Already have an incoming link with id {}", reqSuffix));
-                    ctx.addOutgoingMessage(subAddress, ctx.getSource(), new LinkSuccessResponse(reqSuffix));
+                Address inAddress = state.getIncomingLinkSuffix(reqLinkId);
+                if (inAddress != null) {
+                    ctx.addOutgoingMessage(subAddress, logAddress, info("Already have an incoming link with id {}", inAddress));
+                    Address suffix = inAddress.removePrefix(ctx.getSelf()); // e.g. actor:0:router:in0 -> router:in0
+                    ctx.addOutgoingMessage(subAddress, ctx.getSource(), new LinkSuccessResponse(suffix));
                     continue;
                 }
 
@@ -92,15 +88,16 @@ final class IncomingMessageHandlerSubcoroutine implements Subcoroutine<Void> {
                 }
 
                 // add the new incominglinksubcoroutine and return success
-                reqSuffix = controller.getAddress().appendSuffix("in" + keepAliveCounter);
-                state.addIncomingLink(reqLinkId, reqSuffix);
+                inAddress = controller.getAddress().append("in" + keepAliveCounter);
+                state.addIncomingLink(reqLinkId, inAddress);
 
                 keepAliveCounter++;
 
-                ctx.addOutgoingMessage(subAddress, logAddress, info("Added incoming link slot with id {}", reqSuffix));
-                ctx.addOutgoingMessage(subAddress, ctx.getSource(), new LinkSuccessResponse(reqSuffix));
+                ctx.addOutgoingMessage(subAddress, logAddress, info("Added incoming link slot with id {}", inAddress));
+                Address suffix = inAddress.removePrefix(ctx.getSelf()); // e.g. actor:0:router:in0 -> router:in0
+                ctx.addOutgoingMessage(subAddress, ctx.getSource(), new LinkSuccessResponse(suffix));
 
-                controller.add(new IncomingLinkSubcoroutine(reqSuffix, state), AddBehaviour.ADD_PRIME_NO_FINISH);
+                controller.add(inAddress, new IncomingLinkSubcoroutine(inAddress, state), AddBehaviour.ADD_PRIME_NO_FINISH);
             }
         }
     }

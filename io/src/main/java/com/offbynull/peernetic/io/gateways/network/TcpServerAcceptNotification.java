@@ -26,75 +26,75 @@ import org.apache.commons.lang3.Validate;
  */
 public final class TcpServerAcceptNotification {
 
-    private final InetAddress sourceInetAddress;
-    private final int sourceInetPort;
-    private final InetAddress destinationInetAddress;
-    private final int destinationInetPort;
+    private final InetAddress localInetAddress;
+    private final int localInetPort;
+    private final InetAddress remoteInetAddress;
+    private final int remoteInetPort;
 
     private final Address networkGatewayAddress;
     private final Address bindAddress;
     
     /**
      * Constructs a {@link TcpCreateRequest} object.
-     * @param sourceInetAddress source address of the socket that was created
-     * @param sourceInetPort source port of the socket that was created
-     * @param destinationInetAddress destination address of the socket that was created
-     * @param destinationInetPort destination port of the socket that was created
+     * @param localInetAddress source address of the socket that was created
+     * @param localInetPort source port of the socket that was created
+     * @param remoteInetAddress destination address of the socket that was created
+     * @param remoteInetPort destination port of the socket that was created
      * @param networkGatewayAddress {@link NetworkGateway} address for this new TCP socket
      * @param bindAddress actor/gateway address that this new TCP socket is bound to
      * @throws NullPointerException if any argument is {@code null}
-     * @throws IllegalArgumentException if {@code 1 > destinationPort > 65535}
+     * @throws IllegalArgumentException if {@code 1 < localInetPort > 65535} or {@code 1 < remoteInetPort > 65535}
      */
     public TcpServerAcceptNotification(
-            InetAddress sourceInetAddress,
-            int sourceInetPort,
-            InetAddress destinationInetAddress,
-            int destinationInetPort,
+            InetAddress localInetAddress,
+            int localInetPort,
+            InetAddress remoteInetAddress,
+            int remoteInetPort,
             Address networkGatewayAddress,
             Address bindAddress) {
-        Validate.notNull(sourceInetAddress);
-        Validate.inclusiveBetween(1, 65535, sourceInetPort);
-        Validate.notNull(destinationInetAddress);
-        Validate.inclusiveBetween(1, 65535, destinationInetPort);
+        Validate.notNull(localInetAddress);
+        Validate.inclusiveBetween(1, 65535, localInetPort);
+        Validate.notNull(remoteInetAddress);
+        Validate.inclusiveBetween(1, 65535, remoteInetPort);
 
-        this.sourceInetAddress = sourceInetAddress;
-        this.sourceInetPort = sourceInetPort;
-        this.destinationInetAddress = destinationInetAddress;
-        this.destinationInetPort = destinationInetPort;
+        this.localInetAddress = localInetAddress;
+        this.localInetPort = localInetPort;
+        this.remoteInetAddress = remoteInetAddress;
+        this.remoteInetPort = remoteInetPort;
         this.networkGatewayAddress = networkGatewayAddress;
         this.bindAddress = bindAddress;
     }
 
     /**
-     * Source address of the socket that was created.
-     * @return source address
+     * Local address of the socket that was created.
+     * @return local address
      */
-    public InetAddress getSourceInetAddress() {
-        return sourceInetAddress;
+    public InetAddress getLocalInetAddress() {
+        return localInetAddress;
     }
 
     /**
-     * Source port of the socket that was created.
-     * @return source address
+     * Local port of the socket that was created.
+     * @return local address
      */
-    public int getSourceInetPort() {
-        return sourceInetPort;
+    public int getLocalInetPort() {
+        return localInetPort;
     }
 
     /**
-     * Destination address of the socket that was created.
-     * @return destination address
+     * Remote address of the socket that was created.
+     * @return remote address
      */
-    public InetAddress getDestinationInetAddress() {
-        return destinationInetAddress;
+    public InetAddress getRemoteInetAddress() {
+        return remoteInetAddress;
     }
 
     /**
-     * Destination port of the socket that was created.
-     * @return destination port
+     * Remote port of the socket that was created.
+     * @return remote port
      */
-    public int getDestinationInetPort() {
-        return destinationInetPort;
+    public int getRemoteInetPort() {
+        return remoteInetPort;
     }
 
     /**
@@ -115,8 +115,8 @@ public final class TcpServerAcceptNotification {
 
     @Override
     public String toString() {
-        return "TcpServerAcceptNotification{" + "sourceInetAddress=" + sourceInetAddress + ", sourceInetPort=" + sourceInetPort
-                + ", destinationInetAddress=" + destinationInetAddress + ", destinationInetPort=" + destinationInetPort
+        return "TcpServerAcceptNotification{" + "localInetAddress=" + localInetAddress + ", localInetPort=" + localInetPort
+                + ", remoteInetAddress=" + remoteInetAddress + ", remoteInetPort=" + remoteInetPort
                 + ", networkGatewayAddress=" + networkGatewayAddress + ", bindAddress=" + bindAddress + '}';
     }
 

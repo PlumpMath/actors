@@ -16,7 +16,7 @@
  */
 package com.offbynull.peernetic.io.actors.networksimulator;
 
-import com.offbynull.peernetic.core.common.Serializer;
+import com.offbynull.peernetic.io.common.Serializer;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;

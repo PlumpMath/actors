@@ -142,7 +142,7 @@ public final class RealtimeDirect {
                 idStr,
                 new RaftClientCoroutine(),
                 new StartClient(
-                        new SimpleAddressTransformer(BASE_ACTOR_ADDRESS, BASE_ACTOR_ADDRESS.appendSuffix(idStr), idStr),
+                        new SimpleAddressTransformer(BASE_ACTOR_ADDRESS, BASE_ACTOR_ADDRESS.append(idStr), idStr),
                         MIN_ELECTION_TIMEOUT,
                         MAX_ELECTION_TIMEOUT,
                         allIdsAsStrs,
@@ -164,7 +164,7 @@ public final class RealtimeDirect {
                 idStr,
                 new RaftServerCoroutine(),
                 new StartServer(
-                        new SimpleAddressTransformer(BASE_ACTOR_ADDRESS, BASE_ACTOR_ADDRESS.appendSuffix(idStr), idStr),
+                        new SimpleAddressTransformer(BASE_ACTOR_ADDRESS, BASE_ACTOR_ADDRESS.append(idStr), idStr),
                         MIN_ELECTION_TIMEOUT,
                         MAX_ELECTION_TIMEOUT,
                         allIdsAsStrs,
@@ -182,8 +182,8 @@ public final class RealtimeDirect {
         actorRunner.getIncomingShuttle().send(
                 Collections.singleton(
                         new Message(
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
                                 new Kill()
                         )
                 )

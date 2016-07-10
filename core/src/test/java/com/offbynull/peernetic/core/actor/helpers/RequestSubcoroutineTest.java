@@ -32,7 +32,7 @@ public class RequestSubcoroutineTest {
         }, Duration.ZERO, Instant.ofEpochMilli(0L));
         testHarness.addActor("test", (Continuation cnt) -> {
             RequestSubcoroutine<String> fixture = new RequestSubcoroutine.Builder<String>()
-                    .sourceAddress(Address.of("fakeid"))
+                    .sourceAddress(Address.fromString("test:fakeid"))
                     .request("reqmsg")
                     .destinationAddress(Address.of("rcvr"))
                     .timerAddress(Address.of("timer"))
@@ -71,7 +71,7 @@ public class RequestSubcoroutineTest {
         }, Duration.ZERO, Instant.ofEpochMilli(0L));
         testHarness.addActor("test", (Continuation cnt) -> {
             RequestSubcoroutine<String> fixture = new RequestSubcoroutine.Builder<String>()
-                    .sourceAddress(Address.of("fakeid"))
+                    .sourceAddress(Address.fromString("test:fakeid"))
                     .request("reqmsg")
                     .destinationAddress(Address.of("rcvr"))
                     .timerAddress(Address.of("timer"))
@@ -105,13 +105,13 @@ public class RequestSubcoroutineTest {
                 dstAddresses.add(ctx.getDestination().toString());
                 recvdItems.add(ctx.getIncomingMessage());
                 
-                ctx.addOutgoingMessage(ctx.getSource(), "resp");
+                ctx.addOutgoingMessage(Address.of("rcvr"), ctx.getSource(), "resp");
                 cnt.suspend();
             }
         }, Duration.ZERO, Instant.ofEpochMilli(0L));
         testHarness.addActor("test", (Continuation cnt) -> {
             RequestSubcoroutine<String> fixture = new RequestSubcoroutine.Builder<String>()
-                    .sourceAddress(Address.of("fakeid"))
+                    .sourceAddress(Address.fromString("test:fakeid"))
                     .request("reqmsg")
                     .destinationAddress(Address.of("rcvr"))
                     .timerAddress(Address.of("timer"))

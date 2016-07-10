@@ -56,7 +56,7 @@ public final class SleepSubcoroutine implements Subcoroutine<Void> {
         Object timeoutMarker = new Object();
         
         ctx.addOutgoingMessage(sourceAddress,
-                timerAddress.appendSuffix("" + timeoutDuration.toMillis()),
+                timerAddress.append("" + timeoutDuration.toMillis()),
                 timeoutMarker);
         
         Object incomingMessage;
@@ -66,11 +66,6 @@ public final class SleepSubcoroutine implements Subcoroutine<Void> {
         } while (incomingMessage != timeoutMarker);
         
         return null;
-    }
-
-    @Override
-    public Address getAddress() {
-        return sourceAddress;
     }
     
     /**

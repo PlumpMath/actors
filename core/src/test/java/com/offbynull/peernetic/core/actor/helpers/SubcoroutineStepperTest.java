@@ -114,11 +114,6 @@ public class SubcoroutineStepperTest {
             
             return loopLimit;
         }
-        
-        @Override
-        public Address getAddress() {
-            return Address.of();
-        }
     }
 
 }

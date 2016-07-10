@@ -40,17 +40,17 @@ final class LeaderSubcoroutine extends AbstractRaftServerSubcoroutine {
         Address graphAddress = state.getGraphAddress();
         String selfLink = state.getSelfLinkId();
         
-        ctx.addOutgoingMessage(logAddress, debug("Entering leader mode"));
-        ctx.addOutgoingMessage(graphAddress, new StyleNode(selfLink, 0x00FF00));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Entering leader mode"));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleNode(selfLink, 0x00FF00));
         
         String oldVotedForId = state.getVotedForLinkId();
         if (oldVotedForId != null) {
-            ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, oldVotedForId));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, oldVotedForId));
         }
         
         if (state.getOtherNodeLinkIds().isEmpty()) {
             // single node in this cluster, there's nothing to send keepalives/updates to -- just endlessly sit here without doing anything
-            ctx.addOutgoingMessage(logAddress, debug("No other nodes to be leader of"));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("No other nodes to be leader of"));
             while (true) {
                 // update commit index right away, no other nodes to sync up to
                 int lastIdx = state.getLastLogIndex();
@@ -74,7 +74,7 @@ final class LeaderSubcoroutine extends AbstractRaftServerSubcoroutine {
         Address timerAddress = state.getTimerAddress();
         
         // send empty appendentries to keep-alive
-        ctx.addOutgoingMessage(logAddress, debug("Sending initial keep-alive append entries"));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Sending initial keep-alive append entries"));
         SubcoroutineRouter msgRouter = new SubcoroutineRouter(MSG_ROUTER_ADDRESS, ctx);
         int attempts = 5;
         int waitTimePerAttempt = state.getMinimumElectionTimeout() / attempts; // minimum election timeout / number of attempts
@@ -82,23 +82,24 @@ final class LeaderSubcoroutine extends AbstractRaftServerSubcoroutine {
         int commitIndex = state.getCommitIndex();
         IdGenerator idGenerator = state.getIdGenerator();
         for (String linkId : state.getOtherNodeLinkIds()) {
-            ctx.addOutgoingMessage(logAddress, debug("Sending keep-alive append entries to {}", linkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Sending keep-alive append entries to {}", linkId));
             List<LogEntry> entries = Collections.emptyList();
             int prevLogIndex = state.getNextIndex(linkId) - 1;
             int prevLogTerm = state.getLogEntry(prevLogIndex).getTerm();
             Address dstAddress = state.getAddressTransformer().toAddress(linkId);
             AppendEntriesRequest req = new AppendEntriesRequest(term, prevLogIndex, prevLogTerm, entries, commitIndex);
+            Address srcAddress = ctx.getSelf().append(MSG_ROUTER_ADDRESS);
             RequestSubcoroutine<AppendEntriesResponse> requestSubcoroutine = new RequestSubcoroutine.Builder<AppendEntriesResponse>()
                     .timerAddress(timerAddress)
                     .attemptInterval(Duration.ofMillis(waitTimePerAttempt))
                     .maxAttempts(5)
                     .request(req)
                     .addExpectedResponseType(AppendEntriesResponse.class)
-                    .sourceAddress(MSG_ROUTER_ADDRESS, idGenerator)
+                    .sourceAddress(srcAddress, idGenerator)
                     .destinationAddress(dstAddress)
                     .throwExceptionIfNoResponse(false)
                     .build();
-            msgRouter.getController().add(requestSubcoroutine, ADD_PRIME_NO_FINISH);
+            msgRouter.getController().add(srcAddress, requestSubcoroutine, ADD_PRIME_NO_FINISH);
         }
         
         // wait for responses or failure
@@ -128,24 +129,25 @@ final class LeaderSubcoroutine extends AbstractRaftServerSubcoroutine {
         int lastLogIndex = state.getLastLogIndex();
         IdGenerator idGenerator = state.getIdGenerator();
         for (String linkId : state.getOtherNodeLinkIds()) {
-            ctx.addOutgoingMessage(logAddress, debug("Sending normal append entries to {}", linkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Sending normal append entries to {}", linkId));
             int nextLogIndex = state.getNextIndex(linkId);
             int prevLogIndex = nextLogIndex - 1;
             int prevLogTerm = state.getLogEntry(prevLogIndex).getTerm();
             List<LogEntry> entries = nextLogIndex > lastLogIndex ? Collections.emptyList() : state.getTailLogEntries(nextLogIndex);
             Address dstAddress = state.getAddressTransformer().toAddress(linkId);
             AppendEntriesRequest req = new AppendEntriesRequest(term, prevLogIndex, prevLogTerm, entries, commitIndex);
+            Address srcAddress = ctx.getSelf().append(MSG_ROUTER_ADDRESS);
             RequestSubcoroutine<AppendEntriesResponse> requestSubcoroutine = new RequestSubcoroutine.Builder<AppendEntriesResponse>()
                     .timerAddress(timerAddress)
                     .attemptInterval(Duration.ofMillis(waitTimePerAttempt))
                     .maxAttempts(5)
                     .request(req)
                     .addExpectedResponseType(AppendEntriesResponse.class)
-                    .sourceAddress(MSG_ROUTER_ADDRESS, idGenerator)
+                    .sourceAddress(srcAddress, idGenerator)
                     .destinationAddress(dstAddress)
                     .throwExceptionIfNoResponse(false)
                     .build();
-            msgRouter.getController().add(requestSubcoroutine, ADD_PRIME_NO_FINISH);
+            msgRouter.getController().add(srcAddress, requestSubcoroutine, ADD_PRIME_NO_FINISH);
             linkIdLookup.put(requestSubcoroutine, linkId);
         }
         
@@ -201,8 +203,8 @@ final class LeaderSubcoroutine extends AbstractRaftServerSubcoroutine {
         Object value = req.getValue();
         state.addLogEntries(new LogEntry(term, value));
         int index = state.getLastLogIndex();
-        ctx.addOutgoingMessage(logAddress, debug("Responding with success {}/{}", term, index));
-        ctx.addOutgoingMessage(src, new PushEntryResponse(index, term));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with success {}/{}", term, index));
+        ctx.addOutgoingMessage(ctx.getSelf(), src, new PushEntryResponse(index, term));
         
         return null;
     }
@@ -216,8 +218,8 @@ final class LeaderSubcoroutine extends AbstractRaftServerSubcoroutine {
         LogEntry logEntry = state.getLogEntry(index);
         int term = logEntry.getTerm();
         Object value = logEntry.getValue();
-        ctx.addOutgoingMessage(logAddress, debug("Responding with success {}/{}", term, index));
-        ctx.addOutgoingMessage(src, new PullEntryResponse(value, index, term));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Responding with success {}/{}", term, index));
+        ctx.addOutgoingMessage(ctx.getSelf(), src, new PullEntryResponse(value, index, term));
         
         return null;
     }

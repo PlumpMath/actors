@@ -16,7 +16,7 @@ public class DirectGatewayTest {
             
             Address sender = ctx.getSource();
             Object msg = ctx.getIncomingMessage();
-            ctx.addOutgoingMessage(sender, msg);
+            ctx.addOutgoingMessage(Address.fromString("actors:echoer"), sender, msg);
         };
 
         ActorRunner actorRunner = new ActorRunner("actors");

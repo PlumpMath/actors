@@ -53,9 +53,9 @@ public final class RaftClientCoroutine implements Coroutine {
 
         String leaderLinkId = rotateToNextServer(serverLinks);
         
-        ctx.addOutgoingMessage(logAddress, debug("Starting client"));
-        ctx.addOutgoingMessage(graphAddress, new AddNode(selfLink));
-        ctx.addOutgoingMessage(graphAddress, new StyleNode(selfLink, 0x808080));
+        ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Starting client"));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddNode(selfLink));
+        ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new StyleNode(selfLink, 0x808080));
         
         try {
             int nextWriteValue = 1000;
@@ -68,10 +68,10 @@ public final class RaftClientCoroutine implements Coroutine {
             int lastReadTerm = -1;
             
             while (true) {
-                ctx.addOutgoingMessage(logAddress, debug("Waiting 1 second"));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Waiting 1 second"));
                 
                 Object timerObj = new Object();
-                ctx.addOutgoingMessage(timerAddress.appendSuffix("1000"), timerObj);
+                ctx.addOutgoingMessage(ctx.getSelf(), timerAddress.append("1000"), timerObj);
                 while (true) {
                     cnt.suspend();
                     if (ctx.getIncomingMessage() == timerObj) {
@@ -86,10 +86,10 @@ public final class RaftClientCoroutine implements Coroutine {
 
                 int writeValue = nextWriteValue;
                 nextWriteValue++;
-                ctx.addOutgoingMessage(logAddress, debug("Attempting to push log entry {} in to {}", writeValue, leaderLinkId));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Attempting to push log entry {} in to {}", writeValue, leaderLinkId));
                 PushEntryRequest pushReq = new PushEntryRequest(writeValue);
                 RequestSubcoroutine<Object> pushRequestSubcoroutine = new RequestSubcoroutine.Builder<>()
-                        .sourceAddress(Address.of())
+                        .sourceAddress(ctx.getSelf())
                         .request(pushReq)
                         .timerAddress(timerAddress)
                         .destinationAddress(dstAddress)
@@ -103,27 +103,28 @@ public final class RaftClientCoroutine implements Coroutine {
                 Object pushResp = pushRequestSubcoroutine.run(cnt);
 
                 if (pushResp == null) {
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
                     leaderLinkId = rotateToNextServer(serverLinks);
-                    ctx.addOutgoingMessage(logAddress, debug("Failed to push log entry {}, no response", writeValue));
-                    ctx.addOutgoingMessage(logAddress, debug("Leader changed {}", leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Failed to push log entry {}, no response", writeValue));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Leader changed {}", leaderLinkId));
                     continue;                
                 } else if (pushResp instanceof RetryResponse) {
-                    ctx.addOutgoingMessage(logAddress, debug("Failed to push log entry {}, bad state", writeValue));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Failed to push log entry {}, bad state", writeValue));
                     continue;
                 } else if (pushResp instanceof RedirectResponse) {
                     String newLeaderLinkId = ((RedirectResponse) pushResp).getLeaderLinkId();
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
-                    ctx.addOutgoingMessage(graphAddress, new AddEdge(selfLink, newLeaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(selfLink, newLeaderLinkId));
                     leaderLinkId = newLeaderLinkId;
-                    ctx.addOutgoingMessage(logAddress, debug("Failed to push log entry {}, leader changed {}", writeValue, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Failed to push log entry {}, leader changed {}", writeValue,
+                            leaderLinkId));
                     continue;
                 } else if (pushResp instanceof PushEntryResponse) {
                     PushEntryResponse msg = (PushEntryResponse) pushResp;
                     lastWriteValue = writeValue;
                     lastWriteIndex = msg.getIndex();
                     lastWriteTerm = msg.getTerm();
-                    ctx.addOutgoingMessage(graphAddress, new LabelNode(selfLink, String.format(NODE_LABEL_FORMAT,
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new LabelNode(selfLink, String.format(NODE_LABEL_FORMAT,
                             selfLink,
                             lastReadValue,
                             lastReadIndex,
@@ -131,9 +132,9 @@ public final class RaftClientCoroutine implements Coroutine {
                             lastWriteValue,
                             lastWriteIndex,
                             lastWriteTerm)));
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
-                    ctx.addOutgoingMessage(graphAddress, new AddEdge(selfLink, leaderLinkId));
-                    ctx.addOutgoingMessage(logAddress, debug("Successfully pushed log entry {}", writeValue));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Successfully pushed log entry {}", writeValue));
                 } else {
                     throw new IllegalStateException();
                 }
@@ -141,10 +142,10 @@ public final class RaftClientCoroutine implements Coroutine {
 
                 
                 
-                ctx.addOutgoingMessage(logAddress, debug("Attempting to pull log entry from {}", leaderLinkId));
+                ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Attempting to pull log entry from {}", leaderLinkId));
                 PullEntryRequest pullReq = new PullEntryRequest();
                 RequestSubcoroutine<Object> pullRequestSubcoroutine = new RequestSubcoroutine.Builder<>()
-                        .sourceAddress(Address.of())
+                        .sourceAddress(ctx.getSelf())
                         .request(pullReq)
                         .timerAddress(timerAddress)
                         .destinationAddress(dstAddress)
@@ -158,29 +159,30 @@ public final class RaftClientCoroutine implements Coroutine {
                 Object pullResp = pullRequestSubcoroutine.run(cnt);
 
                 if (pullResp == null) {
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
                     leaderLinkId = rotateToNextServer(serverLinks);
-                    ctx.addOutgoingMessage(logAddress, debug("Failed to pull log entry, no response"));
-                    ctx.addOutgoingMessage(logAddress, debug("Leader changed {}", leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Failed to pull log entry, no response"));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Leader changed {}", leaderLinkId));
                     continue;
                 } else if (pullResp instanceof RetryResponse) {
-                    ctx.addOutgoingMessage(logAddress, debug("Failed to pull log entry {}, bad state", writeValue));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Failed to pull log entry {}, bad state", writeValue));
                     continue;
                 } else if (pullResp instanceof RedirectResponse) {
                     String newLeaderLinkId = ((RedirectResponse) pullResp).getLeaderLinkId();
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
-                    ctx.addOutgoingMessage(graphAddress, new AddEdge(selfLink, newLeaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(selfLink, newLeaderLinkId));
                     leaderLinkId = newLeaderLinkId;
-                    ctx.addOutgoingMessage(logAddress, debug("Failed to pull log entry {}, leader changed {}", writeValue, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Failed to pull log entry {}, leader changed {}", writeValue,
+                            leaderLinkId));
                     continue;
                 } else {
                     PullEntryResponse msg = (PullEntryResponse) pullResp;
                     lastReadValue = msg.getValue();
                     lastReadIndex = msg.getIndex();
                     lastReadTerm = msg.getTerm();
-                    ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
-                    ctx.addOutgoingMessage(graphAddress, new AddEdge(selfLink, leaderLinkId));
-                    ctx.addOutgoingMessage(graphAddress, new LabelNode(selfLink, String.format(NODE_LABEL_FORMAT,
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new AddEdge(selfLink, leaderLinkId));
+                    ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new LabelNode(selfLink, String.format(NODE_LABEL_FORMAT,
                             selfLink,
                             lastReadValue,
                             lastReadIndex,
@@ -188,12 +190,13 @@ public final class RaftClientCoroutine implements Coroutine {
                             lastWriteValue,
                             lastWriteIndex,
                             lastWriteTerm)));
-                    ctx.addOutgoingMessage(logAddress, debug("Successfully pulled log entry {} at index {}", lastReadValue, lastReadIndex));
+                    ctx.addOutgoingMessage(ctx.getSelf(), logAddress, debug("Successfully pulled log entry {} at index {}", lastReadValue,
+                            lastReadIndex));
                 }
             }
         } finally {
-            ctx.addOutgoingMessage(graphAddress, new RemoveEdge(selfLink, leaderLinkId));
-            ctx.addOutgoingMessage(graphAddress, new RemoveNode(selfLink, true, false));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveEdge(selfLink, leaderLinkId));
+            ctx.addOutgoingMessage(ctx.getSelf(), graphAddress, new RemoveNode(selfLink, true, false));
         }
     }
     

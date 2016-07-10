@@ -91,11 +91,6 @@ final class InitRouteToSuccessorSubcoroutine implements Subcoroutine<Pointer> {
         return found;
     }
     
-    @Override
-    public Address getAddress() {
-        return subAddress;
-    }
-    
     private ExternalPointer funnelToInitRouteToCoroutine(Continuation cnt, ExternalPointer bootstrapNode, NodeId findId) throws Exception {
         Validate.notNull(cnt);
         Validate.notNull(bootstrapNode);
@@ -103,7 +98,7 @@ final class InitRouteToSuccessorSubcoroutine implements Subcoroutine<Pointer> {
         
         String idSuffix = "initroutetopred" + idGenerator.generate();
         InitRouteToCoroutine innerCoroutine = new InitRouteToCoroutine(
-                subAddress.appendSuffix(idSuffix),
+                subAddress.append(idSuffix),
                 state,
                 bootstrapNode,
                 findId);
@@ -116,7 +111,7 @@ final class InitRouteToSuccessorSubcoroutine implements Subcoroutine<Pointer> {
         Address destination = state.getAddressTransformer().toAddress(destinationLinkId);
         RequestSubcoroutine<T> requestSubcoroutine = new RequestSubcoroutine.Builder<T>()
                 .sourceAddress(subAddress, idGenerator)
-                .destinationAddress(destination.appendSuffix(ROUTER_HANDLER_RELATIVE_ADDRESS))
+                .destinationAddress(destination.append(ROUTER_HANDLER_RELATIVE_ADDRESS))
                 .request(message)
                 .timerAddress(timerAddress)
                 .addExpectedResponseType(expectedResponseClass)

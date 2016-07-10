@@ -77,7 +77,7 @@ public final class RealtimeViaUdpGateway {
                 bindAddress,
                 baseUdpAddressStr,
                 actorRunner.getIncomingShuttle(),
-                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                BASE_ACTOR_ADDRESS.append(idStr),
                 new SimpleSerializer()
         );
         actorRunner.addOutgoingShuttle(udpGateway.getIncomingShuttle());
@@ -97,7 +97,7 @@ public final class RealtimeViaUdpGateway {
                 idStr,
                 new UnstructuredClientCoroutine(),
                 new Start(
-                        new SimpleAddressTransformer(baseUdpAddress, BASE_ACTOR_ADDRESS.appendSuffix(idStr), selfLinkId),
+                        new SimpleAddressTransformer(baseUdpAddress, BASE_ACTOR_ADDRESS.append(idStr), selfLinkId),
                         connIdStr,
                         seed,
                         BASE_TIMER_ADDRESS,

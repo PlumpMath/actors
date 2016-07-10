@@ -19,7 +19,7 @@ public class TimerGatewayTest {
             Context ctx = (Context) cnt.getContext();
 
             String timerPrefix = ctx.getIncomingMessage();
-            ctx.addOutgoingMessage(Address.of("fromid"), Address.of(timerPrefix, "2000", "extra"), "msg");
+            ctx.addOutgoingMessage(Address.fromString("local:tester:fromid"), Address.of(timerPrefix, "2000", "extra"), "msg");
             cnt.suspend();
             
             queue.add(ctx.getSource().toString());

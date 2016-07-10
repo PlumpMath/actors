@@ -1,7 +1,7 @@
 package com.offbynull.peernetic.io.actors.networksimulator;
 
-import com.offbynull.peernetic.core.common.SimpleSerializer;
 import com.offbynull.peernetic.core.shuttle.Address;
+import com.offbynull.peernetic.io.common.SimpleSerializer;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collection;

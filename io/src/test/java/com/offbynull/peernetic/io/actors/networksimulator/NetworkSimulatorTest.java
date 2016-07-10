@@ -2,9 +2,9 @@ package com.offbynull.peernetic.io.actors.networksimulator;
 
 import com.offbynull.coroutines.user.Coroutine;
 import com.offbynull.peernetic.core.actor.Context;
-import com.offbynull.peernetic.core.common.SimpleSerializer;
 import com.offbynull.peernetic.core.shuttle.Address;
 import com.offbynull.peernetic.core.simulator.Simulator;
+import com.offbynull.peernetic.io.common.SimpleSerializer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -13,7 +13,7 @@ import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
-public class StartNetworkSimulatorTest {
+public class NetworkSimulatorTest {
 
     @Test
     public void mustProperlySimulateNetwork() throws Exception {
@@ -25,7 +25,7 @@ public class StartNetworkSimulatorTest {
             Address dstAddr = ctx.getIncomingMessage();
 
             for (int i = 0; i < 10; i++) {
-                ctx.addOutgoingMessage(Address.of("hi"), dstAddr, i);
+                ctx.addOutgoingMessage(ctx.getSelf().append("hi"), dstAddr, i);
             }
 
             while (true) {
@@ -40,7 +40,7 @@ public class StartNetworkSimulatorTest {
             while (true) {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(ctx.getSelf(), src, msg);
                 cnt.suspend();
             }
         };
@@ -61,8 +61,7 @@ public class StartNetworkSimulatorTest {
                                 10,
                                 1500,
                                 new SimpleSerializer())));
-        simulator.addActor("sender", sender, Duration.ZERO, Instant.ofEpochMilli(0L),
-                Address.fromString("senderproxy:echoerproxy"));
+        simulator.addActor("sender", sender, Duration.ZERO, Instant.ofEpochMilli(0L), Address.fromString("senderproxy:echoerproxy"));
         simulator.addActor("senderproxy", new NetworkSimulatorCoroutine(), Duration.ZERO, Instant.ofEpochMilli(0L),
                 new StartNetworkSimulator(
                         Address.of("timer"),

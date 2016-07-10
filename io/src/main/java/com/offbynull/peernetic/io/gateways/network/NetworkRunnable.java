@@ -406,8 +406,8 @@ final class NetworkRunnable implements Runnable {
             clientChannel.configureBlocking(false);
 
             
-            Address selfSuffix = entry.getSelfSuffix().appendSuffix(socketAddressToHexString(clientChannel));
-            Address connectionAddress = entry.getInitiatingAddress().appendSuffix(socketAddressToHexString(clientChannel));
+            Address selfSuffix = entry.getSelfSuffix().append(socketAddressToHexString(clientChannel));
+            Address connectionAddress = entry.getInitiatingAddress().append(socketAddressToHexString(clientChannel));
             TcpNetworkEntry clientEntry = new TcpNetworkEntry(selfSuffix, connectionAddress, clientChannel);
             clientEntry.setConnecting(false);
 
@@ -423,7 +423,7 @@ final class NetworkRunnable implements Runnable {
                             ((InetSocketAddress) clientChannel.getLocalAddress()).getPort(),
                             ((InetSocketAddress) clientChannel.getRemoteAddress()).getAddress(),
                             ((InetSocketAddress) clientChannel.getRemoteAddress()).getPort(),
-                            selfPrefix.appendSuffix(selfSuffix),
+                            selfPrefix.append(selfSuffix),
                             connectionAddress));
         } catch (IOException ioe) {
             forcefullyShutdownResource(entry.getSelfSuffix(), new ErrorNotification());
@@ -715,7 +715,7 @@ final class NetworkRunnable implements Runnable {
     }
 
     private void queueOutgoingMessage(NetworkEntry entry, Object msg) {
-        Address selfAddress = selfPrefix.appendSuffix(entry.getSelfSuffix());
+        Address selfAddress = selfPrefix.append(entry.getSelfSuffix());
         Address initiatingAddress = entry.getInitiatingAddress();
         Message envelope = new Message(selfAddress, initiatingAddress, msg);
         
@@ -726,7 +726,7 @@ final class NetworkRunnable implements Runnable {
     }
 
     private void queueOutgoingMessage(Address selfSuffix, Address initiatingAddress, Object msg) {
-        Address selfAddress = selfPrefix.appendSuffix(selfSuffix);
+        Address selfAddress = selfPrefix.append(selfSuffix);
         Message envelope = new Message(selfAddress, initiatingAddress, msg);
 
         String outgoingShuttleName = initiatingAddress.getElement(0);

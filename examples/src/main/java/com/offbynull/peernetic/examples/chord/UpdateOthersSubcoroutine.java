@@ -102,11 +102,6 @@ final class UpdateOthersSubcoroutine implements Subcoroutine<Void> {
             funnelToSleepCoroutine(cnt, Duration.ofSeconds(1L));
         }
     }
-
-    @Override
-    public Address getAddress() {
-        return subAddress;
-    }
     
     private Pointer funnelToRouteToCoroutine(Continuation cnt, NodeId routerId) throws Exception {
         Validate.notNull(cnt);
@@ -114,7 +109,7 @@ final class UpdateOthersSubcoroutine implements Subcoroutine<Void> {
 
         String idSuffix = "routeto" + idGenerator.generate();
         RouteToSubcoroutine innerCoroutine = new RouteToSubcoroutine(
-                subAddress.appendSuffix(idSuffix),
+                subAddress.append(idSuffix),
                 state,
                 routerId);
         return innerCoroutine.run(cnt);
@@ -138,7 +133,7 @@ final class UpdateOthersSubcoroutine implements Subcoroutine<Void> {
         Address destination = state.getAddressTransformer().toAddress(destinationLinkId);
         RequestSubcoroutine<T> requestSubcoroutine = new RequestSubcoroutine.Builder<T>()
                 .sourceAddress(subAddress, idGenerator)
-                .destinationAddress(destination.appendSuffix(ROUTER_HANDLER_RELATIVE_ADDRESS))
+                .destinationAddress(destination.append(ROUTER_HANDLER_RELATIVE_ADDRESS))
                 .request(message)
                 .timerAddress(timerAddress)
                 .addExpectedResponseType(expectedResponseClass)

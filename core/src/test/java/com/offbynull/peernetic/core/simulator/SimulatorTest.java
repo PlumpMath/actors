@@ -32,7 +32,7 @@ public class SimulatorTest {
             Address dstAddr = ctx.getIncomingMessage();
 
             for (int i = 0; i < 3; i++) {
-                ctx.addOutgoingMessage(dstAddr, i);
+                ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, i);
                 cnt.suspend();
                 result.add((Integer) ctx.getIncomingMessage());
             }
@@ -44,7 +44,7 @@ public class SimulatorTest {
             while (true) {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                 cnt.suspend();
             }
         };
@@ -68,13 +68,13 @@ public class SimulatorTest {
             Context ctx = (Context) cnt.getContext();
             Address dstAddr = ctx.getIncomingMessage();
 
-            ctx.addOutgoingMessage(dstAddr, 0);
-            ctx.addOutgoingMessage(dstAddr, 1);
-            ctx.addOutgoingMessage(dstAddr, 2);
-            ctx.addOutgoingMessage(Address.fromString("timer:2000"), new Object());
-            ctx.addOutgoingMessage(dstAddr, 100);
-            ctx.addOutgoingMessage(dstAddr, 101);
-            ctx.addOutgoingMessage(dstAddr, 102);
+            ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, 0);
+            ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, 1);
+            ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, 2);
+            ctx.addOutgoingMessage(Address.fromString("sender"), Address.fromString("timer:2000"), new Object());
+            ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, 100);
+            ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, 101);
+            ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, 102);
 
             for (int i = 0; i < 3; i++) {
                 cnt.suspend();
@@ -95,7 +95,7 @@ public class SimulatorTest {
             while (true) {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                 cnt.suspend();
             }
         };
@@ -124,7 +124,7 @@ public class SimulatorTest {
             senderTimes.add(ctx.getTime());
 
             for (int i = 0; i < 3; i++) {
-                ctx.addOutgoingMessage(dstAddr, i);
+                ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, i);
                 cnt.suspend();
                 result.add((Integer) ctx.getIncomingMessage());
                 senderTimes.add(ctx.getTime());
@@ -138,7 +138,7 @@ public class SimulatorTest {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
                 echoerTimes.add(ctx.getTime());
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                 cnt.suspend();
             }
         };
@@ -168,7 +168,7 @@ public class SimulatorTest {
             senderTimes.add(ctx.getTime());
 
             for (int i = 0; i < 3; i++) {
-                ctx.addOutgoingMessage(dstAddr, i);
+                ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, i);
                 cnt.suspend();
                 result.add((Integer) ctx.getIncomingMessage());
                 senderTimes.add(ctx.getTime());
@@ -182,7 +182,7 @@ public class SimulatorTest {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
                 echoerTimes.add(ctx.getTime());
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                 cnt.suspend();
             }
         };
@@ -227,7 +227,7 @@ public class SimulatorTest {
             senderTimes.add(ctx.getTime());
 
             for (int i = 0; i < 3; i++) {
-                ctx.addOutgoingMessage(dstAddr, i);
+                ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, i);
                 cnt.suspend();
                 result.add((Integer) ctx.getIncomingMessage());
                 senderTimes.add(ctx.getTime());
@@ -241,7 +241,7 @@ public class SimulatorTest {
                 Address src = ctx.getSource();
                 Object msg = ctx.getIncomingMessage();
                 echoerTimes.add(ctx.getTime());
-                ctx.addOutgoingMessage(src, msg);
+                ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                 cnt.suspend();
             }
         };
@@ -288,7 +288,7 @@ public class SimulatorTest {
             times.add(ctx.getTime());
 
             Address timerPrefix = ctx.getIncomingMessage();
-            ctx.addOutgoingMessage(timerPrefix.appendSuffix("2000"), 0);
+            ctx.addOutgoingMessage(Address.fromString("local"), timerPrefix.append("2000"), 0);
             cnt.suspend();
 
             result.add(ctx.getIncomingMessage());
@@ -323,7 +323,7 @@ public class SimulatorTest {
             times.add(ctx.getTime());
 
             Address timerPrefix = ctx.getIncomingMessage();
-            ctx.addOutgoingMessage(timerPrefix.appendSuffix("2000"), 0);
+            ctx.addOutgoingMessage(Address.fromString("local"), timerPrefix.append("2000"), 0);
             cnt.suspend();
 
             result.add(ctx.getIncomingMessage());
@@ -361,7 +361,7 @@ public class SimulatorTest {
                 Address dstAddr = ctx.getIncomingMessage();
 
                 for (int i = 0; i < 3; i++) {
-                    ctx.addOutgoingMessage(dstAddr, i);
+                    ctx.addOutgoingMessage(Address.fromString("sender"), dstAddr, i);
                     cnt.suspend();
                 }
             };
@@ -372,7 +372,7 @@ public class SimulatorTest {
                 while (true) {
                     Address src = ctx.getSource();
                     Object msg = ctx.getIncomingMessage();
-                    ctx.addOutgoingMessage(src, msg);
+                    ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                     cnt.suspend();
                 }
             };
@@ -403,7 +403,7 @@ public class SimulatorTest {
                 while (true) {
                     Address src = ctx.getSource();
                     Object msg = ctx.getIncomingMessage();
-                    ctx.addOutgoingMessage(src, msg);
+                    ctx.addOutgoingMessage(Address.fromString("echoer"), src, msg);
                     result.add((Integer) ctx.getIncomingMessage());
                     echoerTimes.add(ctx.getTime());
                     cnt.suspend();
@@ -467,7 +467,7 @@ public class SimulatorTest {
     public void mustNotSendTimerMessageIfTimerWasRemovedAndReadded() {
         MutableBoolean failCalled = new MutableBoolean();
         Coroutine triggerTimerActor = (cnt) -> {
-            ((Context) cnt.getContext()).addOutgoingMessage(Address.of("timer", "5000"), "failmsg");
+            ((Context) cnt.getContext()).addOutgoingMessage(Address.fromString("test"), Address.of("timer", "5000"), "failmsg");
             while (true) {
                 cnt.suspend();
             }

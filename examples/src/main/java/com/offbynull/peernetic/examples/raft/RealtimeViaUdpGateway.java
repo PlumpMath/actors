@@ -160,7 +160,7 @@ public final class RealtimeViaUdpGateway {
                 bindAddress,
                 baseUdpAddressStr,
                 actorRunner.getIncomingShuttle(),
-                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                BASE_ACTOR_ADDRESS.append(idStr),
                 new SimpleSerializer()
         );
         actorRunner.addOutgoingShuttle(udpGateway.getIncomingShuttle());
@@ -179,7 +179,7 @@ public final class RealtimeViaUdpGateway {
                 idStr,
                 new RaftClientCoroutine(),
                 new StartClient(
-                        new SimpleAddressTransformer(baseUdpAddress, BASE_ACTOR_ADDRESS.appendSuffix(idStr), selfLinkId),
+                        new SimpleAddressTransformer(baseUdpAddress, BASE_ACTOR_ADDRESS.append(idStr), selfLinkId),
                         MIN_ELECTION_TIMEOUT,
                         MAX_ELECTION_TIMEOUT,
                         allIdsAsStrs,
@@ -206,7 +206,7 @@ public final class RealtimeViaUdpGateway {
                 idStr,
                 new RaftServerCoroutine(),
                 new StartServer(
-                        new SimpleAddressTransformer(baseUdpAddress, BASE_ACTOR_ADDRESS.appendSuffix(idStr), selfLinkId),
+                        new SimpleAddressTransformer(baseUdpAddress, BASE_ACTOR_ADDRESS.append(idStr), selfLinkId),
                         MIN_ELECTION_TIMEOUT,
                         MAX_ELECTION_TIMEOUT,
                         allIdsAsStrs,
@@ -224,8 +224,8 @@ public final class RealtimeViaUdpGateway {
         actorRunner.getIncomingShuttle().send(
                 Collections.singleton(
                         new Message(
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
                                 new Kill()
                         )
                 )

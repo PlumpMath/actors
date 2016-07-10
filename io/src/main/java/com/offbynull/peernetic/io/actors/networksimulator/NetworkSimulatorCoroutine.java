@@ -159,7 +159,7 @@ public final class NetworkSimulatorCoroutine implements Coroutine {
                         forwardInfo.getProxyFromAddress(),
                         forwardInfo.getProxyToAddress());
                 for (TransitMessage tm : line.processOutgoing(time, dm)) {
-                    ctx.addOutgoingMessage(timerPrefix.appendSuffix("" + tm.getDuration().toMillis()), tm);
+                    ctx.addOutgoingMessage(ctx.getSelf(), timerPrefix.append("" + tm.getDuration().toMillis()), tm);
                 }
             } else {
                 // Incoming message
@@ -168,7 +168,7 @@ public final class NetworkSimulatorCoroutine implements Coroutine {
                         forwardInfo.getProxyFromAddress(),
                         forwardInfo.getProxyToAddress());
                 for (TransitMessage tm : line.processIncoming(time, dm)) {
-                    ctx.addOutgoingMessage(timerPrefix.appendSuffix("" + tm.getDuration().toMillis()), tm);
+                    ctx.addOutgoingMessage(ctx.getSelf(), timerPrefix.append("" + tm.getDuration().toMillis()), tm);
                 }
             }
         }

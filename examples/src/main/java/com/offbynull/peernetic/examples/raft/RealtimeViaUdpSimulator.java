@@ -157,7 +157,7 @@ public final class RealtimeViaUdpSimulator {
                 new UdpSimulatorCoroutine(),
                 new StartUdpSimulator(
                         BASE_TIMER_ADDRESS,
-                        BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                        BASE_ACTOR_ADDRESS.append(idStr),
                         () -> new SimpleLine(
                                 id, // random seed is id
                                 Duration.ofMillis(100L),
@@ -175,8 +175,8 @@ public final class RealtimeViaUdpSimulator {
         String idStr = Integer.toString(clientId);
         String udpSimProxyIdStr = String.format(SIMULATED_UDP_PROXY_ID_FORMAT, clientId);
         Address remoteBaseAddr = BASE_ACTOR_ADDRESS
-                    .appendSuffix(udpSimProxyIdStr)
-                    .appendSuffix(BASE_ACTOR_ADDRESS);
+                    .append(udpSimProxyIdStr)
+                    .append(BASE_ACTOR_ADDRESS);
         Set<String> allIdsAsStrs = allServerIds.stream()
                 .map(x -> String.format(SIMULATED_UDP_PROXY_ID_FORMAT, x))
                 .collect(Collectors.toSet());
@@ -185,7 +185,7 @@ public final class RealtimeViaUdpSimulator {
                 idStr,
                 new RaftClientCoroutine(),
                 new StartClient(
-                        new SimpleAddressTransformer(remoteBaseAddr, BASE_ACTOR_ADDRESS.appendSuffix(idStr), udpSimProxyIdStr),
+                        new SimpleAddressTransformer(remoteBaseAddr, BASE_ACTOR_ADDRESS.append(idStr), udpSimProxyIdStr),
                         MIN_ELECTION_TIMEOUT,
                         MAX_ELECTION_TIMEOUT,
                         allIdsAsStrs,
@@ -200,8 +200,8 @@ public final class RealtimeViaUdpSimulator {
         String idStr = Integer.toString(serverId);
         String udpSimProxyIdStr = String.format(SIMULATED_UDP_PROXY_ID_FORMAT, serverId);
         Address remoteBaseAddr = BASE_ACTOR_ADDRESS
-                    .appendSuffix(udpSimProxyIdStr)
-                    .appendSuffix(BASE_ACTOR_ADDRESS);
+                    .append(udpSimProxyIdStr)
+                    .append(BASE_ACTOR_ADDRESS);
         Set<String> allIdsAsStrs = allServerIds.stream()
                 .map(x -> String.format(SIMULATED_UDP_PROXY_ID_FORMAT, x))
                 .collect(Collectors.toSet());
@@ -213,7 +213,7 @@ public final class RealtimeViaUdpSimulator {
                 idStr,
                 new RaftServerCoroutine(),
                 new StartServer(
-                        new SimpleAddressTransformer(remoteBaseAddr, BASE_ACTOR_ADDRESS.appendSuffix(idStr), udpSimProxyIdStr),
+                        new SimpleAddressTransformer(remoteBaseAddr, BASE_ACTOR_ADDRESS.append(idStr), udpSimProxyIdStr),
                         MIN_ELECTION_TIMEOUT,
                         MAX_ELECTION_TIMEOUT,
                         allIdsAsStrs,
@@ -231,8 +231,8 @@ public final class RealtimeViaUdpSimulator {
         actorRunner.getIncomingShuttle().send(
                 Collections.singleton(
                         new Message(
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
-                                BASE_ACTOR_ADDRESS.appendSuffix(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
+                                BASE_ACTOR_ADDRESS.append(idStr),
                                 new Kill()
                         )
                 )

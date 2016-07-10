@@ -97,7 +97,7 @@ public final class ReplayMessageSource implements MessageSource {
         Address dstSuffix = recordedMessage.getDstSuffix();
         return new SourceMessage(
                 recordedMessage.getSrcAddress(),
-                dstSuffix == null ? destinationPrefix : destinationPrefix.appendSuffix(dstSuffix),
+                dstSuffix == null ? destinationPrefix : destinationPrefix.append(dstSuffix),
                 duration,
                 recordedMessage.getMessage());
     }

@@ -95,11 +95,6 @@ final class FixFingerTableSubcoroutine implements Subcoroutine<Void> {
                 state.getSelfId(), subAddress, i, findId, oldFinger, foundFinger));
     }
     
-    @Override
-    public Address getAddress() {
-        return subAddress;
-    }
-    
     private void funnelToSleepCoroutine(Continuation cnt, Duration duration) throws Exception {
         new SleepSubcoroutine.Builder()
                 .sourceAddress(subAddress)
@@ -112,7 +107,7 @@ final class FixFingerTableSubcoroutine implements Subcoroutine<Void> {
     private Pointer funnelToRouteToSuccessorCoroutine(Continuation cnt, NodeId findId) throws Exception {
         String idSuffix = "routetosucc" + idGenerator.generate();
         RouteToSuccessorSubcoroutine innerCoroutine = new RouteToSuccessorSubcoroutine(
-                subAddress.appendSuffix(idSuffix),
+                subAddress.append(idSuffix),
                 state,
                 findId);
         return innerCoroutine.run(cnt);

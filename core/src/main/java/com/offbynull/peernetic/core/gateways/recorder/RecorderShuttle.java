@@ -61,7 +61,7 @@ final class RecorderShuttle implements Shuttle {
         List<Message> redirectedMessages = messages.stream()
                 .map(x -> {
                     Address dstSuffix = prefix.removePrefix(x.getDestinationAddress());
-                    Address realDstAddress = dstAddress.appendSuffix(dstSuffix);
+                    Address realDstAddress = dstAddress.append(dstSuffix);
                     return new Message(
                             x.getSourceAddress(),
                             realDstAddress,

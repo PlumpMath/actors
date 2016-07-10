@@ -116,9 +116,4 @@ final class IncomingRequestHandlerSubcoroutine implements Subcoroutine<Void> {
             }
         }
     }
-
-    @Override
-    public Address getAddress() {
-        return subAddress;
-    }
 }
